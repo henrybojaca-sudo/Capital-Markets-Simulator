@@ -1,17 +1,14 @@
 """
-Portfolio calculations: value, returns, performance metrics
+Portfolio calculations: value = invested + cash
 """
 
 import pandas as pd
-from datetime import datetime
 from tickers import INITIAL_CAPITAL
+from storage import get_cash
 
 
-def calculate_portfolio_value(portfolio: dict, prices: dict) -> float:
-    """
-    portfolio = {ticker: quantity}
-    prices = {ticker: {"price": float, ...}}
-    """
+def calculate_invested_value(portfolio: dict, prices: dict) -> float:
+    """Value of positions only (without cash)"""
     total = 0.0
     for ticker, qty in portfolio.items():
         if qty > 0 and ticker in prices and prices[ticker].get("price"):
@@ -19,18 +16,22 @@ def calculate_portfolio_value(portfolio: dict, prices: dict) -> float:
     return total
 
 
+def calculate_total_value(group_number: int, portfolio: dict, prices: dict) -> float:
+    """Total = invested + cash"""
+    invested = calculate_invested_value(portfolio, prices)
+    cash = get_cash(group_number)
+    return invested + cash
+
+
 def portfolio_composition(portfolio: dict, prices: dict) -> pd.DataFrame:
-    """
-    Retorna DataFrame con composición del portafolio.
-    """
     rows = []
-    total = calculate_portfolio_value(portfolio, prices)
+    total_invested = calculate_invested_value(portfolio, prices)
 
     for ticker, qty in portfolio.items():
         if qty > 0 and ticker in prices and prices[ticker].get("price"):
             price = prices[ticker]["price"]
             value = qty * price
-            weight = (value / total * 100) if total > 0 else 0
+            weight = (value / total_invested * 100) if total_invested > 0 else 0
             rows.append({
                 "Ticker": ticker,
                 "Cantidad": qty,
@@ -41,46 +42,35 @@ def portfolio_composition(portfolio: dict, prices: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def calculate_return(current_value: float, initial: float = INITIAL_CAPITAL) -> float:
-    """Return as percentage"""
+def calculate_return(total_value: float, initial: float = INITIAL_CAPITAL) -> float:
     if initial == 0:
         return 0.0
-    return (current_value - initial) / initial * 100
+    return (total_value - initial) / initial * 100
 
 
 def get_leaderboard(groups: dict, portfolios: dict, prices: dict) -> pd.DataFrame:
-    """
-    Ranking por total return.
-    groups = {group_num: {...}}
-    portfolios = {group_num: {ticker: qty}}
-    """
     rows = []
     for key, group in groups.items():
         portfolio = portfolios.get(key, {})
-        current_val = calculate_portfolio_value(portfolio, prices)
-        ret = calculate_return(current_val, group.get("initial_capital", INITIAL_CAPITAL))
+        group_num = int(key)
+        invested = calculate_invested_value(portfolio, prices)
+        cash = get_cash(group_num)
+        total = invested + cash
+        ret = calculate_return(total, group.get("initial_capital", INITIAL_CAPITAL))
         rows.append({
             "Grupo": f"Grupo {group['group_number']}",
             "Nickname": group["nickname"],
             "Capitán": group["captain"],
-            "Valor Actual (COP)": current_val,
-            "Return Total (%)": ret,
+            "Invertido": invested,
+            "Efectivo": cash,
+            "Valor Total": total,
+            "Return (%)": ret,
         })
 
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    df = df.sort_values("Return Total (%)", ascending=False).reset_index(drop=True)
+    df = df.sort_values("Return (%)", ascending=False).reset_index(drop=True)
     df.index = df.index + 1
-    df.index.name = "Posición"
+    df.index.name = "Pos"
     return df
-
-
-def benchmark_return(prices_bench: dict, start_price: float) -> float:
-    """COLCAP return from start_price to current"""
-    if not prices_bench or not start_price:
-        return 0.0
-    current = prices_bench.get("price")
-    if not current:
-        return 0.0
-    return (current - start_price) / start_price * 100
