@@ -8,9 +8,9 @@ from datetime import datetime
 
 from tickers import TRADEABLE_ASSETS, BENCHMARK_TICKER, BENCHMARK_NAME, INITIAL_CAPITAL
 from data_loader import get_latest_prices
-from storage import get_all_groups, get_portfolio, get_all_trades
+from storage import get_all_groups, get_portfolio, get_all_trades, get_cash
 from portfolio import (
-    calculate_portfolio_value, portfolio_composition, calculate_return,
+    calculate_invested_value, portfolio_composition, calculate_return,
     get_leaderboard,
 )
 from email_sender import send_email, build_daily_report_html
@@ -103,6 +103,11 @@ h1, h2, h3 {
     border-color: #a855f7 !important;
     box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1) !important;
 }
+.stTextInput label, .stNumberInput label {
+    color: #cbd5e1 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
 
 .stButton > button {
     background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
@@ -139,7 +144,6 @@ h1, h2, h3 {
     border: 1px solid rgba(168, 85, 247, 0.2);
     border-radius: 20px;
     padding: 40px;
-    backdrop-filter: blur(20px);
     max-width: 450px;
     margin: 60px auto;
     box-shadow: 0 20px 60px rgba(0,0,0,0.4);
@@ -180,8 +184,8 @@ if not st.session_state.admin_authenticated:
     <div class="login-subtitle">Ingresa la contraseña de administrador</div>
     """, unsafe_allow_html=True)
 
-    pw = st.text_input("", type="password", placeholder="Contraseña de administrador",
-                       label_visibility="collapsed")
+    pw = st.text_input("Contraseña", type="password",
+                       placeholder="Contraseña de administrador")
     if st.button("Entrar →", type="primary"):
         admin_pw = st.secrets.get("admin_password", "profesor2026")
         if pw == admin_pw:
@@ -219,7 +223,10 @@ with st.spinner("Cargando datos..."):
     portfolios = {k: get_portfolio(int(k)) for k in groups.keys()}
 
 total_groups = len(groups)
-total_aum = sum(calculate_portfolio_value(portfolios.get(k, {}), prices) for k in groups.keys())
+total_aum = sum(
+    calculate_invested_value(portfolios.get(k, {}), prices) + get_cash(int(k))
+    for k in groups.keys()
+)
 bench_price = bench_prices[BENCHMARK_TICKER].get('price')
 
 s1, s2, s3 = st.columns(3)
@@ -271,8 +278,10 @@ with tab_lb:
             lb.style
               .apply(highlight_top, axis=1)
               .format({
-                  "Valor Actual (COP)": "${:,.0f}",
-                  "Return Total (%)": "{:+.2f}%",
+                  "Invertido": "${:,.0f}",
+                  "Efectivo": "${:,.0f}",
+                  "Valor Total": "${:,.0f}",
+                  "Return (%)": "{:+.2f}%",
               }),
             use_container_width=True,
         )
@@ -283,12 +292,13 @@ with tab_detail:
     else:
         for key, g in sorted(groups.items(), key=lambda x: int(x[0])):
             portfolio = portfolios.get(key, {})
-            current_val = calculate_portfolio_value(portfolio, prices)
+            invested_val = calculate_invested_value(portfolio, prices)
+            cash_val = get_cash(int(key))
+            current_val = invested_val + cash_val
             ret = calculate_return(current_val, g.get("initial_capital", INITIAL_CAPITAL))
-            color = "#4ade80" if ret >= 0 else "#f87171"
 
             with st.expander(
-                f"Grupo {g['group_number']} — {g['nickname']} │ Valor: ${current_val:,.0f} │ Return: {ret:+.2f}%"
+                f"Grupo {g['group_number']} — {g['nickname']} │ Invertido: ${invested_val:,.0f} │ Cash: ${cash_val:,.0f} │ Total: ${current_val:,.0f} │ Return: {ret:+.2f}%"
             ):
                 st.caption(f"Capitán: {g['captain']} · Registrado: {g['created_at'][:10]}")
                 comp_df = portfolio_composition(portfolio, prices)
