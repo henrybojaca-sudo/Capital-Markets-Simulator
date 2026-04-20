@@ -1,6 +1,7 @@
 """
 Capital Markets Simulator - Main App
-Diseño inspirado en FinPulse: gradiente oscuro, acentos turquesa, tarjetas con bordes de color
+Diseño FinPulse: gradiente oscuro + acentos turquesa + tarjetas con bordes de color
+Labels visibles (no dependemos de placeholders)
 """
 
 import streamlit as st
@@ -43,9 +44,59 @@ h1, h2, h3 {
     color: #f8fafc !important;
     letter-spacing: -0.02em;
 }
-h1 {font-weight: 700 !important; font-size: 2.5rem !important;}
-h2 {font-weight: 600 !important;}
 
+/* Labels de inputs bien visibles */
+.stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label {
+    color: #cbd5e1 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
+}
+
+/* Inputs */
+.stTextInput input, .stNumberInput input {
+    background: rgba(10, 14, 39, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+}
+.stTextInput input:focus, .stNumberInput input:focus {
+    border-color: #2dd4bf !important;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+.stTextInput input::placeholder, .stNumberInput input::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+/* Select */
+.stSelectbox > div > div {
+    background: rgba(10, 14, 39, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+}
+
+/* Botones */
+.stButton > button {
+    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
+    color: #0a0e27 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    width: 100%;
+    transition: all 0.2s;
+}
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(45, 212, 191, 0.3) !important;
+}
+
+/* Brand */
 .brand {
     display: flex; align-items: center; gap: 12px;
     font-family: 'Space Grotesk', sans-serif;
@@ -61,12 +112,13 @@ h2 {font-weight: 600 !important;}
     font-size: 20px;
 }
 
+/* Hero */
 .hero-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 3.2rem !important;
+    font-size: 3rem !important;
     font-weight: 700;
     line-height: 1.05;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1rem;
     color: #f8fafc;
 }
 .hero-accent {
@@ -77,86 +129,34 @@ h2 {font-weight: 600 !important;}
 }
 .hero-sub {
     color: #94a3b8;
-    font-size: 1.05rem;
+    font-size: 1rem;
     line-height: 1.6;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
+/* Cards */
 .cat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 14px;
-    margin-top: 2rem;
-    max-width: 620px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    max-width: 580px;
 }
 .cat-card {
     background: rgba(20, 24, 50, 0.6);
     border-radius: 12px;
-    padding: 16px 12px;
+    padding: 14px 10px;
     text-align: center;
     border-top: 3px solid;
-    transition: transform 0.2s;
-    backdrop-filter: blur(10px);
 }
-.cat-card:hover { transform: translateY(-3px); }
-.cat-icon { font-size: 22px; margin-bottom: 8px; display: block;}
-.cat-name { font-size: 12px; color: #cbd5e1; font-weight: 500; line-height: 1.3;}
+.cat-icon { font-size: 22px; margin-bottom: 6px; display: block;}
+.cat-name { font-size: 12px; color: #cbd5e1; font-weight: 500;}
 
-.login-card {
-    background: rgba(20, 24, 50, 0.7);
-    border: 1px solid rgba(45, 212, 191, 0.15);
-    border-radius: 20px;
-    padding: 32px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-}
-.login-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #f8fafc;
-    margin-bottom: 6px;
-}
-.login-subtitle {
-    color: #94a3b8;
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
-}
-
-.stTextInput input, .stNumberInput input {
-    background: rgba(10, 14, 39, 0.8) !important;
-    border: 1px solid rgba(148, 163, 184, 0.2) !important;
-    border-radius: 12px !important;
-    color: #f8fafc !important;
-    padding: 14px 16px !important;
-    font-size: 14px !important;
-}
-.stTextInput input:focus, .stNumberInput input:focus {
-    border-color: #2dd4bf !important;
-    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1) !important;
-}
-
-.stButton > button {
-    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
-    color: #0a0e27 !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 12px 24px !important;
-    font-weight: 600 !important;
-    font-family: 'Space Grotesk', sans-serif !important;
-    width: 100%;
-    transition: all 0.2s;
-}
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(45, 212, 191, 0.3) !important;
-}
-
+/* Stats */
 .stat-box {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%);
     border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 20px;
 }
 .stat-label {
     font-size: 11px;
@@ -164,11 +164,11 @@ h2 {font-weight: 600 !important;}
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 .stat-value {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: #f8fafc;
     line-height: 1.1;
@@ -176,6 +176,7 @@ h2 {font-weight: 600 !important;}
 .pos-ret { color: #4ade80 !important; }
 .neg-ret { color: #f87171 !important; }
 
+/* Tabs */
 .stTabs [data-baseweb="tab-list"] { gap: 8px; background: transparent; }
 .stTabs [data-baseweb="tab"] {
     background: rgba(20, 24, 50, 0.6) !important;
@@ -191,29 +192,24 @@ h2 {font-weight: 600 !important;}
     border-color: rgba(45, 212, 191, 0.3) !important;
 }
 
+/* Group header */
 .group-header {
     background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
     border: 1px solid rgba(45, 212, 191, 0.2);
-    border-radius: 16px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
 }
 .group-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #f8fafc;
     margin: 0;
 }
-.group-sub { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+.group-sub { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
 
-.footer-text {
-    color: #64748b;
-    font-size: 12px;
-    text-align: center;
-    margin-top: 2rem;
-}
-
+/* Info box */
 .rules-box {
     background: rgba(250, 204, 21, 0.08);
     border-left: 3px solid #facc15;
@@ -223,10 +219,45 @@ h2 {font-weight: 600 !important;}
     font-size: 13px;
     margin: 12px 0;
 }
+
+/* Caption visible */
+.stCaption, [data-testid="stCaptionContainer"] {
+    color: #94a3b8 !important;
+}
+
+/* Form card container */
+.form-card {
+    background: rgba(20, 24, 50, 0.5);
+    border: 1px solid rgba(45, 212, 191, 0.15);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.form-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 4px;
+}
+.form-sub {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+}
+
+.footer-text {
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 2rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# Session state
+# ============================================================
+# SESSION STATE
+# ============================================================
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "group_info" not in st.session_state:
@@ -236,30 +267,26 @@ if "group_info" not in st.session_state:
 # LANDING / LOGIN
 # ============================================================
 if not st.session_state.authenticated:
-    top_l, top_r = st.columns([5, 1])
-    with top_l:
-        st.markdown("""
-        <div class="brand">
-            <div class="brand-icon">📈</div>
-            <span>Capital Markets</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="brand">
+        <div class="brand-icon">📈</div>
+        <span>Capital Markets</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     hero_l, hero_r = st.columns([1.2, 1])
 
     with hero_l:
         st.markdown("""
-        <div style="padding: 20px 0;">
-            <div style="font-size: 48px; margin-bottom: 16px;">💼</div>
+        <div style="padding: 10px 0;">
+            <div style="font-size: 42px; margin-bottom: 12px;">💼</div>
             <h1 class="hero-title">
                 Invierte, compite,<br>
                 <span class="hero-accent">gana el mercado</span>
             </h1>
             <p class="hero-sub">
-                Simulador de mercado con acciones reales de la BVC. Construye tu
-                portafolio, compite con tus compañeros y supera al COLCAP.
+                Simulador con acciones reales de la BVC. Construye tu portafolio,
+                compite con tus compañeros y supera al COLCAP.
             </p>
             <div class="cat-grid">
                 <div class="cat-card" style="border-top-color:#ef4444;">
@@ -287,24 +314,25 @@ if not st.session_state.authenticated:
         """, unsafe_allow_html=True)
 
     with hero_r:
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        tab_login, tab_register = st.tabs(["🔐 Iniciar Sesión", "📝 Registrar"])
+        tab_login, tab_register = st.tabs(["🔐 Iniciar Sesión", "📝 Registrar Grupo"])
 
         with tab_login:
             st.markdown("""
-            <div class="login-title">🚀 Bienvenido de vuelta</div>
-            <div class="login-subtitle">Accede con tu grupo y contraseña</div>
+            <div class="form-title">🚀 Bienvenido</div>
+            <div class="form-sub">Accede con tu grupo y contraseña</div>
             """, unsafe_allow_html=True)
 
             group_num = st.number_input(
-                "Número de grupo", min_value=1, max_value=50, step=1,
-                key="login_num", label_visibility="collapsed",
-                placeholder="Número de grupo"
+                "Número de grupo",
+                min_value=1, max_value=50, step=1,
+                key="login_num",
+                help="Número asignado a tu grupo"
             )
             password = st.text_input(
-                "Contraseña", type="password",
-                key="login_pw", label_visibility="collapsed",
-                placeholder="Contraseña del grupo"
+                "Contraseña",
+                type="password",
+                key="login_pw",
+                help="Contraseña definida al registrar el grupo"
             )
             if st.button("Iniciar Sesión →", type="primary", key="btn_login"):
                 info = authenticate(int(group_num), password)
@@ -317,32 +345,37 @@ if not st.session_state.authenticated:
 
         with tab_register:
             st.markdown("""
-            <div class="login-title">✨ Crea tu grupo</div>
-            <div class="login-subtitle">Empieza con 100 millones COP virtuales</div>
+            <div class="form-title">✨ Crea tu grupo</div>
+            <div class="form-sub">Empieza con 100 millones COP virtuales</div>
             """, unsafe_allow_html=True)
 
             r_num = st.number_input(
-                "Número de grupo", min_value=1, max_value=50, step=1,
-                key="reg_num", label_visibility="collapsed",
-                placeholder="Número de grupo"
+                "Número de grupo",
+                min_value=1, max_value=50, step=1,
+                key="reg_num",
+                help="Elige un número único del 1 al 50"
             )
             r_nick = st.text_input(
-                "Nickname", key="reg_nick", label_visibility="collapsed",
-                placeholder="Nickname del grupo"
+                "Nickname del grupo",
+                key="reg_nick",
+                placeholder="Ej: Los Toros de Wall Street",
+                help="Nombre creativo para tu grupo"
             )
             r_captain = st.text_input(
-                "Capitán", key="reg_cap", label_visibility="collapsed",
-                placeholder="Nombre del capitán"
+                "Nombre del capitán",
+                key="reg_cap",
+                placeholder="Ej: María López",
+                help="Persona responsable del grupo"
             )
             r_pw = st.text_input(
-                "Contraseña", type="password",
-                key="reg_pw", label_visibility="collapsed",
-                placeholder="Contraseña (mín. 4)"
+                "Contraseña (mínimo 4 caracteres)",
+                type="password",
+                key="reg_pw",
             )
             r_pw2 = st.text_input(
-                "Confirmar", type="password",
-                key="reg_pw2", label_visibility="collapsed",
-                placeholder="Confirmar contraseña"
+                "Confirmar contraseña",
+                type="password",
+                key="reg_pw2",
             )
 
             if st.button("Registrar Grupo →", type="primary", key="btn_reg"):
@@ -351,15 +384,13 @@ if not st.session_state.authenticated:
                 elif r_pw != r_pw2:
                     st.error("Las contraseñas no coinciden")
                 elif len(r_pw) < 4:
-                    st.error("Contraseña muy corta (mín. 4)")
+                    st.error("Contraseña muy corta (mínimo 4)")
                 else:
                     ok = register_group(int(r_num), r_nick.strip(), r_captain.strip(), r_pw)
                     if ok:
-                        st.success(f"✅ Grupo {r_num} registrado")
+                        st.success(f"✅ Grupo {r_num} registrado. Ya puedes iniciar sesión.")
                     else:
                         st.error(f"El grupo {r_num} ya existe")
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="footer-text">
@@ -431,7 +462,7 @@ with s4:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
 tab_port, tab_trade, tab_hist = st.tabs(["📊 Mi Portafolio", "💱 Operar", "📜 Historial"])
 
@@ -440,7 +471,7 @@ with tab_port:
         st.markdown("""
         <div class="rules-box">
             💡 Aún no tienes posiciones. Ve a <b>Operar</b> para hacer tu primera inversión.
-            Recuerda: debes invertir el 100% del capital cada día.
+            Debes invertir el 100% del capital cada día.
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -467,7 +498,6 @@ with tab_port:
             plot_bgcolor="rgba(0,0,0,0)",
             font_color="#cbd5e1",
             font_family="Inter",
-            showlegend=True,
             height=420,
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -493,11 +523,12 @@ with tab_trade:
         if buy_price:
             st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
             buy_amount = st.number_input(
-                "Monto COP", min_value=0, step=100_000, key="buy_amount"
+                "Monto a invertir (COP)",
+                min_value=0, step=100_000, key="buy_amount"
             )
             buy_qty = buy_amount / buy_price if buy_price > 0 else 0
             if buy_qty > 0:
-                st.caption(f"📦 Cantidad: **{buy_qty:,.4f}**")
+                st.caption(f"📦 Cantidad estimada: **{buy_qty:,.4f}**")
 
             if st.button("Ejecutar Compra →", type="primary", key="btn_buy"):
                 if buy_amount <= 0:
@@ -509,14 +540,14 @@ with tab_trade:
                         "action": "BUY", "ticker": buy_ticker,
                         "quantity": buy_qty, "price": buy_price, "amount": buy_amount,
                     })
-                    st.success(f"✅ {buy_qty:,.4f} de {buy_ticker}")
+                    st.success(f"✅ Compra: {buy_qty:,.4f} de {buy_ticker}")
                     st.rerun()
 
     with col_sell:
         st.markdown("### 🔴 Vender")
         held = {t: q for t, q in portfolio.items() if q > 0}
         if not held:
-            st.info("No tienes posiciones")
+            st.info("No tienes posiciones para vender")
         else:
             sell_ticker = st.selectbox(
                 "Activo a vender",
@@ -549,7 +580,7 @@ with tab_trade:
                         "quantity": sell_qty, "price": sell_price, "amount": sell_amount,
                     })
                     st.success(f"✅ Venta: {sell_qty:,.4f} de {sell_ticker}")
-                    st.info(f"💡 Reinvierte los ${sell_amount:,.0f}")
+                    st.info(f"💡 Reinvierte ${sell_amount:,.0f}")
                     st.rerun()
 
 with tab_hist:
