@@ -546,14 +546,14 @@ with tab_trade:
                         st.session_state.buy_amount = int(cash)
                         st.rerun()
 
-                buy_qty = buy_amount / buy_price if buy_price > 0 else 0
+                buy_qty = round(buy_amount / buy_price, 6) if buy_price > 0 else 0
                 if buy_qty > 0:
                     st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
 
                 if st.button("Ejecutar Compra →", type="primary", key="btn_buy"):
                     if buy_amount <= 0:
                         st.error("Monto debe ser mayor a 0")
-                    elif buy_amount > cash + 0.01:
+                    elif buy_amount > cash:
                         st.error(f"Efectivo insuficiente. Disponible: ${cash:,.0f}")
                     else:
                         # Execute
@@ -600,11 +600,11 @@ with tab_trade:
                 if sell_pct <= 0:
                     st.error("Selecciona % mayor a 0")
                 else:
+                    increase_cash(group_num, sell_amount)
                     portfolio[sell_ticker] = current_qty - sell_qty
                     if portfolio[sell_ticker] < 0.0001:
                         portfolio[sell_ticker] = 0
                     save_portfolio(group_num, portfolio)
-                    increase_cash(group_num, sell_amount)
                     record_trade(group_num, {
                         "action": "SELL", "ticker": sell_ticker,
                         "quantity": sell_qty, "price": sell_price,

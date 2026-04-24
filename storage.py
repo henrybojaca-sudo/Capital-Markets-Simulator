@@ -7,7 +7,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 
-INITIAL_CAPITAL = 100_000_000
+from tickers import INITIAL_CAPITAL
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -104,12 +104,24 @@ def get_portfolio(group_number: int) -> dict:
 def save_portfolio(group_number: int, portfolio: dict):
     tab = _get_tab(TAB_PORTFOLIOS)
     all_rows = tab.get_all_values()
-    rows_to_delete = []
-    for i, row in enumerate(all_rows[1:], start=2):
-        if row and str(row[0]) == str(group_number):
-            rows_to_delete.append(i)
-    for row_idx in sorted(rows_to_delete, reverse=True):
-        tab.delete_rows(row_idx)
+    rows_to_delete = sorted(
+        [i for i, row in enumerate(all_rows[1:], start=2) if row and str(row[0]) == str(group_number)],
+        reverse=True,
+    )
+    # Delete contiguous ranges in one call to avoid partial-delete corruption
+    if rows_to_delete:
+        # Group into contiguous ranges
+        ranges = []
+        start = end = rows_to_delete[0]
+        for r in rows_to_delete[1:]:
+            if r == end - 1:
+                end = r
+            else:
+                ranges.append((start, end))
+                start = end = r
+        ranges.append((start, end))
+        for top, bottom in ranges:
+            tab.delete_rows(bottom, top)
     new_rows = [[group_number, ticker, qty] for ticker, qty in portfolio.items() if qty > 0.0001]
     if new_rows:
         tab.append_rows(new_rows, value_input_option="USER_ENTERED")
@@ -148,7 +160,7 @@ def set_cash(group_number: int, amount: float):
 
 def decrease_cash(group_number: int, amount: float) -> bool:
     current = get_cash(group_number)
-    if amount > current + 0.01:
+    if amount > current:
         return False
     set_cash(group_number, current - amount)
     return True
@@ -168,6 +180,7 @@ def record_trade(group_number: int, trade: dict):
         trade.get("ticker", ""),
         float(trade.get("quantity", 0)),
         float(trade.get("price", 0)),
+        float(trade.get("amount", 0)),
     ], value_input_option="USER_ENTERED")
 
 
@@ -179,13 +192,15 @@ def get_trades(group_number: int) -> list:
         if str(r.get("group_number")) == str(group_number):
             qty = float(r.get("quantity", 0))
             price = float(r.get("price", 0))
+            stored_amount = r.get("amount")
+            amount = float(stored_amount) if stored_amount else qty * price
             result.append({
                 "timestamp": r.get("timestamp", ""),
                 "action": r.get("action", ""),
                 "ticker": r.get("ticker", ""),
                 "quantity": qty,
                 "price": price,
-                "amount": qty * price,
+                "amount": amount,
             })
     return result
 
@@ -202,12 +217,14 @@ def get_all_trades() -> dict:
             result[key] = []
         qty = float(r.get("quantity", 0))
         price = float(r.get("price", 0))
+        stored_amount = r.get("amount")
+        amount = float(stored_amount) if stored_amount else qty * price
         result[key].append({
             "timestamp": r.get("timestamp", ""),
             "action": r.get("action", ""),
             "ticker": r.get("ticker", ""),
             "quantity": qty,
             "price": price,
-            "amount": qty * price,
+            "amount": amount,
         })
     return result
