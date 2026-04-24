@@ -25,97 +25,86 @@ st.set_page_config(
 # --- CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* ══ BASE ══════════════════════════════════════ */
-html, body, [class*="css"] { font-size: 16px; }
-.stApp { background: #131722 !important; font-family: 'DM Sans', sans-serif; }
+* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; }
 #MainMenu, footer, header { visibility: hidden; }
-h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #d1d4dc !important; font-weight: 700; }
 
-/* ══ BRAND ═════════════════════════════════════ */
-.brand {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 1.4rem; font-weight: 700;
-    color: #d1d4dc; margin-bottom: 1.5rem;
+/* ══ TEXTO NATIVO DE STREAMLIT ═══════════════════ */
+p, .stMarkdown p, [data-testid="stMarkdown"] p { font-size: 16px !important; line-height: 1.6 !important; }
+[data-testid="stCaptionContainer"] p, .stCaption p { font-size: 15px !important; color: #9ba3b2 !important; }
+label, .stTextInput label, .stNumberInput label,
+.stTextInput label p, .stNumberInput label p {
+    font-size: 14px !important; font-weight: 600 !important; letter-spacing: 0.04em !important;
 }
-.brand-icon {
-    width: 42px; height: 42px; background: #2196f3;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; font-size: 22px;
+h1, h2, h3 { font-weight: 700 !important; }
+
+/* ══ INPUTS ══════════════════════════════════════ */
+input, textarea, .stTextInput input, .stNumberInput input {
+    font-size: 17px !important; padding: 12px 16px !important;
+    border-radius: 8px !important;
 }
 
-/* ══ ADMIN HEADER ══════════════════════════════ */
-.admin-header {
-    background: #1e2433; border: 1px solid #2a2e39;
-    border-left: 4px solid #2196f3;
-    border-radius: 8px; padding: 22px 26px; margin-bottom: 24px;
+/* ══ BUTTONS ═════════════════════════════════════ */
+.stButton > button {
+    background: #2196f3 !important; color: #fff !important;
+    border: none !important; border-radius: 8px !important;
+    padding: 14px 20px !important; font-size: 16px !important;
+    font-weight: 700 !important; width: 100%; transition: background 0.15s;
 }
-.admin-title { font-size: 1.8rem; font-weight: 700; color: #d1d4dc; margin: 0; }
-.admin-sub { color: #787b86; font-size: 0.95rem; margin-top: 6px; }
+.stButton > button:hover { background: #1565c0 !important; }
 
-/* ══ STAT BOXES ════════════════════════════════ */
+/* ══ TABS ════════════════════════════════════════ */
+.stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2a2e39 !important; gap: 0 !important; }
+.stTabs [data-baseweb="tab"] {
+    font-size: 17px !important; font-weight: 600 !important;
+    padding: 14px 28px !important; border: none !important;
+    background: transparent !important;
+}
+.stTabs [data-baseweb="tab"] p { font-size: 17px !important; font-weight: 600 !important; }
+.stTabs [aria-selected="true"] { border-bottom: 3px solid #2196f3 !important; }
+
+/* ══ ALERTAS NATIVAS ═════════════════════════════ */
+[data-testid="stAlert"] p { font-size: 15px !important; }
+
+/* ══ STAT BOXES ══════════════════════════════════ */
 .stat-box {
     background: #1e2433; border: 1px solid #2a2e39;
     border-top: 3px solid #2196f3;
-    border-radius: 10px; padding: 22px 24px;
+    border-radius: 12px; padding: 24px 20px;
 }
 .stat-label {
-    font-size: 11px; color: #787b86;
-    text-transform: uppercase; letter-spacing: 0.09em;
-    font-weight: 600; margin-bottom: 10px;
+    font-size: 12px !important; text-transform: uppercase;
+    letter-spacing: 0.09em; font-weight: 700 !important;
+    margin-bottom: 10px; opacity: 0.7;
 }
 .stat-value {
-    font-size: clamp(1.4rem, 2.5vw, 2.2rem);
-    font-weight: 700; color: #d1d4dc;
-    line-height: 1.05; font-variant-numeric: tabular-nums;
+    font-size: 2.2rem !important; font-weight: 800 !important;
+    line-height: 1.1; font-variant-numeric: tabular-nums;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* ══ INPUTS ════════════════════════════════════ */
-.stTextInput input, .stNumberInput input {
-    background: #1e2433 !important; border: 1px solid #2a2e39 !important;
-    border-radius: 6px !important; color: #d1d4dc !important;
-    padding: 12px 16px !important; font-size: 16px !important;
-    font-family: 'DM Sans', sans-serif !important;
+/* ══ ADMIN HEADER ════════════════════════════════ */
+.admin-header {
+    background: #1e2433; border: 1px solid #2a2e39;
+    border-left: 4px solid #2196f3;
+    border-radius: 10px; padding: 22px 26px; margin-bottom: 24px;
 }
-.stTextInput input:focus, .stNumberInput input:focus {
-    border-color: #2196f3 !important;
-    box-shadow: 0 0 0 3px rgba(33,150,243,0.15) !important;
+.admin-title { font-size: 1.8rem !important; font-weight: 700 !important; margin: 0; }
+.admin-sub { font-size: 15px !important; margin-top: 6px; opacity: 0.7; }
+
+/* ══ BRAND ═══════════════════════════════════════ */
+.brand {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;
 }
-.stTextInput label, .stNumberInput label {
-    color: #787b86 !important; font-size: 12px !important;
-    font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.07em;
+.brand-icon {
+    width: 44px; height: 44px; background: #2196f3;
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 24px;
 }
 
-/* ══ BUTTONS ═══════════════════════════════════ */
-.stButton > button {
-    background: #2196f3 !important; color: #ffffff !important;
-    border: none !important; border-radius: 6px !important;
-    padding: 14px 24px !important; font-weight: 700 !important;
-    font-family: 'DM Sans', sans-serif !important; font-size: 15px !important;
-    width: 100%; transition: background 0.15s;
-}
-.stButton > button:hover {
-    background: #1976d2 !important;
-    box-shadow: 0 4px 14px rgba(33,150,243,0.35) !important;
-}
-
-/* ══ TABS ══════════════════════════════════════ */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 0; background: transparent; border-bottom: 1px solid #2a2e39;
-}
-.stTabs [data-baseweb="tab"] {
-    background: transparent !important; border-radius: 0 !important;
-    padding: 13px 26px !important; color: #787b86 !important;
-    font-weight: 600; font-size: 15px;
-    font-family: 'DM Sans', sans-serif !important; border: none !important;
-}
-.stTabs [aria-selected="true"] {
-    background: transparent !important; color: #d1d4dc !important;
-    border-bottom: 2px solid #2196f3 !important;
-}
-
-/* ══ LOGIN CARD ════════════════════════════════ */
+/* ══ LOGIN CARD ══════════════════════════════════ */
 .login-card {
     background: #1e2433; border: 1px solid #2a2e39;
     border-top: 3px solid #2196f3;
@@ -123,11 +112,8 @@ h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #d1d4dc !impo
     max-width: 440px; margin: 60px auto;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
-.login-title {
-    font-size: 1.6rem; font-weight: 700; color: #d1d4dc;
-    text-align: center; margin-bottom: 8px;
-}
-.login-subtitle { color: #787b86; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; }
+.login-title { font-size: 1.6rem !important; font-weight: 700 !important; text-align: center; margin-bottom: 8px; }
+.login-subtitle { font-size: 15px !important; text-align: center; margin-bottom: 2rem; opacity: 0.65; }
 </style>
 """, unsafe_allow_html=True)
 
