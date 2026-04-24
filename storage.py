@@ -90,7 +90,7 @@ def get_all_groups() -> dict:
 
 def get_portfolio(group_number: int) -> dict:
     tab = _get_tab(TAB_PORTFOLIOS)
-    rows = tab.get_all_records()
+    rows = tab.get_all_records(value_render_option="UNFORMATTED_VALUE")
     portfolio = {}
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
@@ -139,15 +139,22 @@ def _find_cash_row(group_number: int):
 
 
 def _safe_float(value, default=0.0) -> float:
+    if value is None or value == "":
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
     try:
-        return float(value) if value not in (None, "") else default
+        # Strip currency symbols, spaces and thousands separators (comma-style)
+        cleaned = str(value).strip().replace(",", "").replace("$", "").replace(" ", "")
+        return float(cleaned) if cleaned else default
     except (ValueError, TypeError):
         return default
 
 
 def get_cash(group_number: int) -> float:
     tab = _get_tab(TAB_CASH)
-    rows = tab.get_all_records()
+    # UNFORMATTED_VALUE returns raw numbers instead of display strings
+    rows = tab.get_all_records(value_render_option="UNFORMATTED_VALUE")
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
             return _safe_float(r.get("cash"), float(INITIAL_CAPITAL))
@@ -193,7 +200,7 @@ def record_trade(group_number: int, trade: dict):
 
 def get_trades(group_number: int) -> list:
     tab = _get_tab(TAB_TRADES)
-    rows = tab.get_all_records()
+    rows = tab.get_all_records(value_render_option="UNFORMATTED_VALUE")
     result = []
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
@@ -214,7 +221,7 @@ def get_trades(group_number: int) -> list:
 
 def get_all_trades() -> dict:
     tab = _get_tab(TAB_TRADES)
-    rows = tab.get_all_records()
+    rows = tab.get_all_records(value_render_option="UNFORMATTED_VALUE")
     result = {}
     for r in rows:
         key = str(r.get("group_number"))
