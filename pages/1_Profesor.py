@@ -187,8 +187,10 @@ if not st.session_state.admin_authenticated:
     pw = st.text_input("Contraseña", type="password",
                        placeholder="Contraseña de administrador")
     if st.button("Entrar →", type="primary"):
-        admin_pw = st.secrets.get("admin_password", "profesor2026")
-        if pw == admin_pw:
+        admin_pw = st.secrets.get("admin_password", "")
+        if not admin_pw:
+            st.error("admin_password no configurado en secrets.toml")
+        elif pw == admin_pw:
             st.session_state.admin_authenticated = True
             st.rerun()
         else:
