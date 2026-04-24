@@ -25,151 +25,109 @@ st.set_page_config(
 # --- CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 
-/* ══ BLOOMBERG TERMINAL THEME — ADMIN ════════════ */
-.stApp {
-    background: #000000 !important;
-    font-family: 'IBM Plex Sans', sans-serif;
-}
+/* ══ BASE ══════════════════════════════════════ */
+html, body, [class*="css"] { font-size: 16px; }
+.stApp { background: #131722 !important; font-family: 'DM Sans', sans-serif; }
 #MainMenu, footer, header { visibility: hidden; }
+h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #d1d4dc !important; font-weight: 700; }
 
-h1, h2, h3 {
-    font-family: 'IBM Plex Mono', monospace !important;
-    color: #e0e0e0 !important;
-    text-transform: uppercase; letter-spacing: -0.01em;
-}
-
-/* ── Brand ───────────────────────────────────── */
+/* ══ BRAND ═════════════════════════════════════ */
 .brand {
-    display: flex; align-items: center; gap: 14px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.3rem; font-weight: 700;
-    color: #F26122; margin-bottom: 1.5rem;
-    text-transform: uppercase; letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 1.4rem; font-weight: 700;
+    color: #d1d4dc; margin-bottom: 1.5rem;
 }
 .brand-icon {
-    width: 44px; height: 44px;
-    background: #F26122;
-    border-radius: 2px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
+    width: 42px; height: 42px; background: #2196f3;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
 }
 
-/* ── Admin header ────────────────────────────── */
+/* ══ ADMIN HEADER ══════════════════════════════ */
 .admin-header {
-    background: #080808;
-    border: 1px solid #1a1a1a;
-    border-left: 3px solid #F26122;
-    border-radius: 2px; padding: 22px 28px; margin-bottom: 24px;
+    background: #1e2433; border: 1px solid #2a2e39;
+    border-left: 4px solid #2196f3;
+    border-radius: 8px; padding: 22px 26px; margin-bottom: 24px;
 }
-.admin-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.7rem; font-weight: 700;
-    color: #e0e0e0; margin: 0;
-    text-transform: uppercase; letter-spacing: 0.03em;
-}
-.admin-sub {
-    color: #3a3a3a; font-size: 0.9rem; margin-top: 6px;
-    font-family: 'IBM Plex Mono', monospace;
-}
+.admin-title { font-size: 1.8rem; font-weight: 700; color: #d1d4dc; margin: 0; }
+.admin-sub { color: #787b86; font-size: 0.95rem; margin-top: 6px; }
 
-/* ── Stat boxes ──────────────────────────────── */
+/* ══ STAT BOXES ════════════════════════════════ */
 .stat-box {
-    background: #080808;
-    border: 1px solid #1a1a1a;
-    border-top: 2px solid #F26122;
-    border-radius: 2px; padding: 22px 24px;
+    background: #1e2433; border: 1px solid #2a2e39;
+    border-top: 3px solid #2196f3;
+    border-radius: 10px; padding: 22px 24px;
 }
 .stat-label {
-    font-size: 10px; color: #F26122;
-    text-transform: uppercase; letter-spacing: 0.12em;
-    font-weight: 700; margin-bottom: 10px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: #787b86;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    font-weight: 600; margin-bottom: 10px;
 }
 .stat-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: clamp(1.2rem, 2.5vw, 2rem);
-    font-weight: 700; color: #e0e0e0;
-    line-height: 1.1; font-variant-numeric: tabular-nums;
+    font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+    font-weight: 700; color: #d1d4dc;
+    line-height: 1.05; font-variant-numeric: tabular-nums;
 }
 
-/* ── Inputs ──────────────────────────────────── */
+/* ══ INPUTS ════════════════════════════════════ */
 .stTextInput input, .stNumberInput input {
-    background: #0d0d0d !important;
-    border: 1px solid #1e1e1e !important;
-    border-bottom: 2px solid #F26122 !important;
-    border-radius: 2px !important;
-    color: #e0e0e0 !important;
-    padding: 12px 16px !important;
-    font-size: 15px !important;
-    font-family: 'IBM Plex Mono', monospace !important;
+    background: #1e2433 !important; border: 1px solid #2a2e39 !important;
+    border-radius: 6px !important; color: #d1d4dc !important;
+    padding: 12px 16px !important; font-size: 16px !important;
+    font-family: 'DM Sans', sans-serif !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
-    border-color: #F26122 !important;
-    box-shadow: 0 0 0 2px rgba(242,97,34,0.18) !important;
+    border-color: #2196f3 !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,0.15) !important;
 }
 .stTextInput label, .stNumberInput label {
-    color: #F26122 !important; font-size: 11px !important;
-    font-weight: 700 !important; text-transform: uppercase;
-    letter-spacing: 0.1em; font-family: 'IBM Plex Mono', monospace !important;
+    color: #787b86 !important; font-size: 12px !important;
+    font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.07em;
 }
 
-/* ── Buttons ─────────────────────────────────── */
+/* ══ BUTTONS ═══════════════════════════════════ */
 .stButton > button {
-    background: #F26122 !important;
-    color: #000000 !important; border: none !important;
-    border-radius: 2px !important; padding: 13px 22px !important;
-    font-weight: 700 !important;
-    font-family: 'IBM Plex Mono', monospace !important;
-    font-size: 13px !important; letter-spacing: 0.08em;
-    text-transform: uppercase; width: 100%;
-    transition: background 0.15s, box-shadow 0.15s;
+    background: #2196f3 !important; color: #ffffff !important;
+    border: none !important; border-radius: 6px !important;
+    padding: 14px 24px !important; font-weight: 700 !important;
+    font-family: 'DM Sans', sans-serif !important; font-size: 15px !important;
+    width: 100%; transition: background 0.15s;
 }
 .stButton > button:hover {
-    background: #ff7a3d !important;
-    box-shadow: 0 0 18px rgba(242,97,34,0.4) !important;
+    background: #1976d2 !important;
+    box-shadow: 0 4px 14px rgba(33,150,243,0.35) !important;
 }
 
-/* ── Tabs ────────────────────────────────────── */
+/* ══ TABS ══════════════════════════════════════ */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0; background: transparent;
-    border-bottom: 1px solid #1a1a1a;
+    gap: 0; background: transparent; border-bottom: 1px solid #2a2e39;
 }
 .stTabs [data-baseweb="tab"] {
     background: transparent !important; border-radius: 0 !important;
-    padding: 13px 26px !important; color: #404040 !important;
-    font-weight: 600; font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace !important;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    border: none !important;
+    padding: 13px 26px !important; color: #787b86 !important;
+    font-weight: 600; font-size: 15px;
+    font-family: 'DM Sans', sans-serif !important; border: none !important;
 }
 .stTabs [aria-selected="true"] {
-    background: transparent !important;
-    color: #F26122 !important;
-    border-bottom: 2px solid #F26122 !important;
+    background: transparent !important; color: #d1d4dc !important;
+    border-bottom: 2px solid #2196f3 !important;
 }
 
-/* ── Login card ──────────────────────────────── */
+/* ══ LOGIN CARD ════════════════════════════════ */
 .login-card {
-    background: #080808;
-    border: 1px solid #1e1e1e;
-    border-top: 3px solid #F26122;
-    border-radius: 2px; padding: 44px;
+    background: #1e2433; border: 1px solid #2a2e39;
+    border-top: 3px solid #2196f3;
+    border-radius: 12px; padding: 44px;
     max-width: 440px; margin: 60px auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
 .login-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.4rem; font-weight: 700;
-    color: #e0e0e0; text-align: center;
-    margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: 1.6rem; font-weight: 700; color: #d1d4dc;
+    text-align: center; margin-bottom: 8px;
 }
-.login-subtitle {
-    color: #3a3a3a; font-size: 0.88rem;
-    text-align: center; margin-bottom: 2rem;
-    font-family: 'IBM Plex Mono', monospace;
-}
+.login-subtitle { color: #787b86; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; }
 </style>
 """, unsafe_allow_html=True)
 
