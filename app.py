@@ -30,248 +30,267 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
+/* ══ BLOOMBERG TERMINAL THEME ════════════════════ */
 .stApp {
-    background: linear-gradient(135deg, #0a0e27 0%, #141832 50%, #1a1245 100%) !important;
-    font-family: 'Inter', sans-serif;
+    background: #000000 !important;
+    font-family: 'IBM Plex Sans', sans-serif;
 }
-#MainMenu, footer, header {visibility: hidden;}
+#MainMenu, footer, header { visibility: hidden; }
 
 h1, h2, h3 {
-    font-family: 'Space Grotesk', sans-serif !important;
-    color: #f8fafc !important;
-    letter-spacing: -0.02em;
+    font-family: 'IBM Plex Mono', monospace !important;
+    color: #e0e0e0 !important;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
 }
 
-.stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label {
-    color: #cbd5e1 !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    margin-bottom: 4px !important;
+/* ── Labels ──────────────────────────────────── */
+.stTextInput label, .stNumberInput label,
+.stSelectbox label, .stSlider label {
+    color: #F26122 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 5px !important;
 }
+
+/* ── Inputs ──────────────────────────────────── */
 .stTextInput input, .stNumberInput input {
-    background: rgba(10, 14, 39, 0.8) !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 10px !important;
-    color: #f8fafc !important;
-    padding: 10px 14px !important;
-    font-size: 14px !important;
+    background: #0d0d0d !important;
+    border: 1px solid #1e1e1e !important;
+    border-bottom: 2px solid #F26122 !important;
+    border-radius: 2px !important;
+    color: #e0e0e0 !important;
+    padding: 11px 14px !important;
+    font-size: 15px !important;
+    font-family: 'IBM Plex Mono', monospace !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
-    border-color: #2dd4bf !important;
-    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+    border-color: #F26122 !important;
+    box-shadow: 0 0 0 2px rgba(242,97,34,0.18) !important;
 }
 .stTextInput input::placeholder, .stNumberInput input::placeholder {
-    color: #64748b !important;
-    opacity: 1 !important;
+    color: #3a3a3a !important; opacity: 1 !important;
 }
 .stSelectbox > div > div {
-    background: rgba(10, 14, 39, 0.8) !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 10px !important;
-    color: #f8fafc !important;
+    background: #0d0d0d !important;
+    border: 1px solid #1e1e1e !important;
+    border-bottom: 2px solid #F26122 !important;
+    border-radius: 2px !important;
+    color: #e0e0e0 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 14px !important;
 }
 
+/* ── Buttons ─────────────────────────────────── */
 .stButton > button {
-    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
-    color: #0a0e27 !important;
+    background: #F26122 !important;
+    color: #000000 !important;
     border: none !important;
-    border-radius: 10px !important;
-    padding: 10px 20px !important;
-    font-weight: 600 !important;
-    font-family: 'Space Grotesk', sans-serif !important;
+    border-radius: 2px !important;
+    padding: 13px 22px !important;
+    font-weight: 700 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 13px !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     width: 100%;
-    transition: all 0.2s;
+    transition: background 0.15s, box-shadow 0.15s;
 }
 .stButton > button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(45, 212, 191, 0.3) !important;
+    background: #ff7a3d !important;
+    box-shadow: 0 0 18px rgba(242,97,34,0.4) !important;
 }
 .stButton > button:disabled {
-    background: rgba(100, 116, 139, 0.3) !important;
-    color: #64748b !important;
-    cursor: not-allowed !important;
-    transform: none !important;
+    background: #1a1a1a !important;
+    color: #3a3a3a !important;
+    box-shadow: none !important;
 }
 
+/* ── Brand ───────────────────────────────────── */
 .brand {
-    display: flex; align-items: center; gap: 12px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.4rem; font-weight: 600;
-    color: #2dd4bf; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.3rem; font-weight: 700;
+    color: #F26122; margin-bottom: 1.5rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
 }
 .brand-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%);
-    border-radius: 10px;
+    width: 44px; height: 44px;
+    background: #F26122;
+    border-radius: 2px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
 }
 
+/* ── Hero ────────────────────────────────────── */
 .hero-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 3rem !important;
-    font-weight: 700;
-    line-height: 1.05;
-    margin-bottom: 1rem;
-    color: #f8fafc;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 2.8rem !important; font-weight: 700;
+    line-height: 1.05; margin-bottom: 1.2rem;
+    color: #e0e0e0; text-transform: uppercase;
 }
 .hero-accent {
-    background: linear-gradient(90deg, #2dd4bf 0%, #4ade80 100%);
+    background: linear-gradient(90deg, #F26122 0%, #00B2BB 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .hero-sub {
-    color: #94a3b8; font-size: 1rem;
-    line-height: 1.6; margin-bottom: 1.5rem;
+    color: #555555; font-size: 1rem;
+    line-height: 1.7; margin-bottom: 1.8rem;
 }
 
+/* ── Category cards ──────────────────────────── */
 .cat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px; max-width: 580px;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 6px; max-width: 540px;
 }
 .cat-card {
-    background: rgba(20, 24, 50, 0.6);
-    border-radius: 12px;
-    padding: 14px 10px;
-    text-align: center;
-    border-top: 3px solid;
+    background: #0d0d0d;
+    border: 1px solid #1e1e1e;
+    border-top: 2px solid;
+    border-radius: 1px; padding: 14px 10px; text-align: center;
 }
-.cat-icon { font-size: 22px; margin-bottom: 6px; display: block;}
-.cat-name { font-size: 12px; color: #cbd5e1; font-weight: 500;}
+.cat-icon { font-size: 22px; margin-bottom: 7px; display: block; }
+.cat-name {
+    font-size: 10px; color: #555555; font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
 
+/* ── Stat boxes ──────────────────────────────── */
 .stat-box {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 14px;
-    padding: 18px;
+    background: #080808;
+    border: 1px solid #1a1a1a;
+    border-top: 2px solid #2a2a2a;
+    border-radius: 2px; padding: 18px 20px;
 }
 .stat-box-cash {
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-    border: 1px solid rgba(250, 204, 21, 0.3);
+    border-top-color: #F26122;
+    background: #0d0800;
 }
 .stat-label {
-    font-size: 11px; color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-size: 10px; color: #F26122;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    font-weight: 700; margin-bottom: 10px;
+    font-family: 'IBM Plex Mono', monospace;
 }
 .stat-value {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #f8fafc;
-    line-height: 1.1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(1.05rem, 2vw, 1.8rem);
+    font-weight: 700; color: #e0e0e0;
+    line-height: 1.1; font-variant-numeric: tabular-nums;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pos-ret { color: #4ade80 !important; }
-.neg-ret { color: #f87171 !important; }
-.cash-value { color: #facc15 !important; }
+.pos-ret { color: #00E676 !important; }
+.neg-ret { color: #FF1744 !important; }
+.cash-value { color: #F26122 !important; }
 
-.stTabs [data-baseweb="tab-list"] { gap: 8px; background: transparent; }
+/* ── Tabs ────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0; background: transparent;
+    border-bottom: 1px solid #1a1a1a;
+}
 .stTabs [data-baseweb="tab"] {
-    background: rgba(20, 24, 50, 0.6) !important;
-    border-radius: 10px !important;
-    padding: 10px 18px !important;
-    color: #94a3b8 !important;
-    font-weight: 500;
-    border: 1px solid rgba(148, 163, 184, 0.1);
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 13px 26px !important;
+    color: #404040 !important;
+    font-weight: 600; font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace !important;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    border: none !important;
 }
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%) !important;
-    color: #2dd4bf !important;
-    border-color: rgba(45, 212, 191, 0.3) !important;
+    background: transparent !important;
+    color: #F26122 !important;
+    border-bottom: 2px solid #F26122 !important;
 }
 
+/* ── Group header ────────────────────────────── */
 .group-header {
-    background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
-    border: 1px solid rgba(45, 212, 191, 0.2);
-    border-radius: 14px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
+    background: #080808;
+    border: 1px solid #1a1a1a;
+    border-left: 3px solid #F26122;
+    border-radius: 2px; padding: 16px 22px; margin-bottom: 22px;
 }
 .group-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.3rem; font-weight: 700;
+    color: #e0e0e0; margin: 0;
+    text-transform: uppercase; letter-spacing: 0.03em;
 }
-.group-sub { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
+.group-sub {
+    color: #3a3a3a; font-size: 0.85rem; margin-top: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+}
 
+/* ── Alert boxes ─────────────────────────────── */
 .rules-box {
-    background: rgba(250, 204, 21, 0.08);
-    border-left: 3px solid #facc15;
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: #fef3c7;
-    font-size: 13px;
-    margin: 12px 0;
+    background: #0d0800;
+    border-left: 3px solid #F26122;
+    border-radius: 1px; padding: 12px 16px;
+    color: #cc8844; font-size: 13px; margin: 12px 0; line-height: 1.6;
+    font-family: 'IBM Plex Mono', monospace;
 }
 .alert-box-red {
-    background: rgba(239, 68, 68, 0.1);
-    border-left: 3px solid #ef4444;
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: #fecaca;
-    font-size: 13px;
-    margin: 12px 0;
+    background: #0d0000;
+    border-left: 3px solid #FF1744;
+    border-radius: 1px; padding: 12px 16px;
+    color: #ff4444; font-size: 13px; margin: 12px 0;
+    font-family: 'IBM Plex Mono', monospace;
 }
 .alert-box-green {
-    background: rgba(74, 222, 128, 0.1);
-    border-left: 3px solid #4ade80;
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: #bbf7d0;
-    font-size: 13px;
-    margin: 12px 0;
+    background: #00100a;
+    border-left: 3px solid #00E676;
+    border-radius: 1px; padding: 12px 16px;
+    color: #00cc55; font-size: 13px; margin: 12px 0;
+    font-family: 'IBM Plex Mono', monospace;
 }
 
+/* ── Form ────────────────────────────────────── */
 .form-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #f8fafc;
-    margin-bottom: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.15rem; font-weight: 700;
+    color: #e0e0e0; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
 }
 .form-sub {
-    color: #94a3b8;
-    font-size: 0.85rem;
-    margin-bottom: 1.2rem;
+    color: #444444; font-size: 0.88rem; margin-bottom: 1.4rem;
 }
 
+/* ── Cash badge ──────────────────────────────── */
 .cash-badge {
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-    border: 1px solid rgba(250, 204, 21, 0.3);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: #0a0600;
+    border: 1px solid rgba(242,97,34,0.25);
+    border-left: 3px solid #F26122;
+    border-radius: 2px; padding: 14px 18px; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center;
 }
 .cash-badge-label {
-    color: #fde68a;
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: #F26122; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; display: block;
+    font-family: 'IBM Plex Mono', monospace;
 }
 .cash-badge-value {
-    font-family: 'Space Grotesk', sans-serif;
-    color: #facc15;
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #F26122; font-size: 1.4rem; font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
+/* ── Footer ──────────────────────────────────── */
 .footer-text {
-    color: #64748b;
-    font-size: 12px;
-    text-align: center;
-    margin-top: 2rem;
+    color: #1e1e1e; font-size: 11px; text-align: center;
+    margin-top: 3rem; padding-top: 1.5rem;
+    border-top: 1px solid #111111;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em;
 }
 </style>
 """, unsafe_allow_html=True)
