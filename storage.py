@@ -95,7 +95,7 @@ def get_portfolio(group_number: int) -> dict:
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
             ticker = r.get("ticker")
-            qty = float(r.get("quantity", 0))
+            qty = _safe_float(r.get("quantity"), 0.0)
             if ticker and qty > 0:
                 portfolio[ticker] = portfolio.get(ticker, 0) + qty
     return portfolio
@@ -138,12 +138,19 @@ def _find_cash_row(group_number: int):
     return None
 
 
+def _safe_float(value, default=0.0) -> float:
+    try:
+        return float(value) if value not in (None, "") else default
+    except (ValueError, TypeError):
+        return default
+
+
 def get_cash(group_number: int) -> float:
     tab = _get_tab(TAB_CASH)
     rows = tab.get_all_records()
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
-            return float(r.get("cash", INITIAL_CAPITAL))
+            return _safe_float(r.get("cash"), float(INITIAL_CAPITAL))
     tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
     return float(INITIAL_CAPITAL)
 
@@ -190,10 +197,10 @@ def get_trades(group_number: int) -> list:
     result = []
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
-            qty = float(r.get("quantity", 0))
-            price = float(r.get("price", 0))
+            qty = _safe_float(r.get("quantity"), 0.0)
+            price = _safe_float(r.get("price"), 0.0)
             stored_amount = r.get("amount")
-            amount = float(stored_amount) if stored_amount else qty * price
+            amount = _safe_float(stored_amount) if stored_amount not in (None, "") else qty * price
             result.append({
                 "timestamp": r.get("timestamp", ""),
                 "action": r.get("action", ""),
@@ -215,10 +222,10 @@ def get_all_trades() -> dict:
             continue
         if key not in result:
             result[key] = []
-        qty = float(r.get("quantity", 0))
-        price = float(r.get("price", 0))
+        qty = _safe_float(r.get("quantity"), 0.0)
+        price = _safe_float(r.get("price"), 0.0)
         stored_amount = r.get("amount")
-        amount = float(stored_amount) if stored_amount else qty * price
+        amount = _safe_float(stored_amount) if stored_amount not in (None, "") else qty * price
         result[key].append({
             "timestamp": r.get("timestamp", ""),
             "action": r.get("action", ""),
