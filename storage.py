@@ -1,13 +1,13 @@
 """
 Storage module - Google Sheets backend
-Fix: save_portfolio ahora borra filas de forma atómica
-+ funciones de reset y borrado total
+Maneja cualquier formato numérico (con puntos, comas, símbolos $, etc.)
 """
 
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+import re
 
 INITIAL_CAPITAL = 100_000_000
 
@@ -20,6 +20,45 @@ TAB_GROUPS = "Groups"
 TAB_PORTFOLIOS = "Portfolios"
 TAB_CASH = "Cash"
 TAB_TRADES = "Trades"
+
+
+def safe_float(value, default=0.0):
+    """Convierte cualquier valor a float de forma segura."""
+    if value is None or value == "":
+        return float(default)
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = str(value).strip()
+    if not s:
+        return float(default)
+    s = re.sub(r"[^\d.,\-]", "", s)
+    if not s:
+        return float(default)
+    if "." in s and "," in s:
+        if s.rfind(".") > s.rfind(","):
+            s = s.replace(",", "")
+        else:
+            s = s.replace(".", "").replace(",", ".")
+    elif "." in s:
+        if s.count(".") > 1:
+            s = s.replace(".", "")
+        else:
+            parts = s.split(".")
+            if len(parts[1]) == 3 and len(parts[0]) <= 3:
+                s = s.replace(".", "")
+    elif "," in s:
+        if s.count(",") > 1:
+            s = s.replace(",", "")
+        else:
+            parts = s.split(",")
+            if len(parts[1]) == 3 and len(parts[0]) <= 3:
+                s = s.replace(",", "")
+            else:
+                s = s.replace(",", ".")
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return float(default)
 
 
 @st.cache_resource(ttl=3600)
@@ -97,7 +136,7 @@ def get_portfolio(group_number: int) -> dict:
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
             ticker = r.get("ticker")
-            qty = float(r.get("quantity", 0))
+            qty = safe_float(r.get("quantity", 0))
             if ticker and qty > 0:
                 portfolio[ticker] = qty
     return portfolio
@@ -142,7 +181,7 @@ def get_cash(group_number: int) -> float:
     rows = tab.get_all_records()
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
-            return float(r.get("cash", INITIAL_CAPITAL))
+            return safe_float(r.get("cash", INITIAL_CAPITAL), INITIAL_CAPITAL)
     tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
     return float(INITIAL_CAPITAL)
 
@@ -188,8 +227,8 @@ def get_trades(group_number: int) -> list:
     result = []
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
-            qty = float(r.get("quantity", 0))
-            price = float(r.get("price", 0))
+            qty = safe_float(r.get("quantity", 0))
+            price = safe_float(r.get("price", 0))
             result.append({
                 "timestamp": r.get("timestamp", ""),
                 "action": r.get("action", ""),
@@ -211,8 +250,8 @@ def get_all_trades() -> dict:
             continue
         if key not in result:
             result[key] = []
-        qty = float(r.get("quantity", 0))
-        price = float(r.get("price", 0))
+        qty = safe_float(r.get("quantity", 0))
+        price = safe_float(r.get("price", 0))
         result[key].append({
             "timestamp": r.get("timestamp", ""),
             "action": r.get("action", ""),
