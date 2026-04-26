@@ -1,6 +1,6 @@
 """
-Storage module - Google Sheets backend
-Maneja cualquier formato numérico (con puntos, comas, símbolos $, etc.)
+Storage module - Google Sheets backend con caching agresivo
+para evitar quota errors (429)
 """
 
 import streamlit as st
@@ -21,9 +21,10 @@ TAB_PORTFOLIOS = "Portfolios"
 TAB_CASH = "Cash"
 TAB_TRADES = "Trades"
 
+CACHE_TTL = 30
+
 
 def safe_float(value, default=0.0):
-    """Convierte cualquier valor a float de forma segura."""
     if value is None or value == "":
         return float(default)
     if isinstance(value, (int, float)):
@@ -70,6 +71,7 @@ def _get_gsheet_client():
     return gspread.authorize(creds)
 
 
+@st.cache_resource(ttl=3600)
 def _get_sheet():
     client = _get_gsheet_client()
     sheet_name = st.secrets.get("sheet_name", "Capital Markets DB")
@@ -80,23 +82,51 @@ def _get_tab(tab_name: str):
     return _get_sheet().worksheet(tab_name)
 
 
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_groups_records():
+    return _get_tab(TAB_GROUPS).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_portfolios_records():
+    return _get_tab(TAB_PORTFOLIOS).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_cash_records():
+    return _get_tab(TAB_CASH).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_trades_records():
+    return _get_tab(TAB_TRADES).get_all_records()
+
+
+def _invalidate_cache():
+    _read_groups_records.clear()
+    _read_portfolios_records.clear()
+    _read_cash_records.clear()
+    _read_trades_records.clear()
+
+
 def register_group(group_number: int, nickname: str, captain: str, password: str) -> bool:
+    rows = _read_groups_records()
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number):
+            return False
     tab = _get_tab(TAB_GROUPS)
-    existing = tab.col_values(1)
-    if str(group_number) in existing[1:]:
-        return False
     tab.append_row([
         group_number, nickname, captain, password,
         datetime.now().isoformat(),
     ], value_input_option="USER_ENTERED")
     cash_tab = _get_tab(TAB_CASH)
     cash_tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
+    _invalidate_cache()
     return True
 
 
 def authenticate(group_number: int, password: str) -> dict | None:
-    tab = _get_tab(TAB_GROUPS)
-    rows = tab.get_all_records()
+    rows = _read_groups_records()
     for r in rows:
         if str(r.get("group_number")) == str(group_number) and str(r.get("password")) == str(password):
             return {
@@ -111,8 +141,7 @@ def authenticate(group_number: int, password: str) -> dict | None:
 
 
 def get_all_groups() -> dict:
-    tab = _get_tab(TAB_GROUPS)
-    rows = tab.get_all_records()
+    rows = _read_groups_records()
     result = {}
     for r in rows:
         key = str(r.get("group_number"))
@@ -130,8 +159,7 @@ def get_all_groups() -> dict:
 
 
 def get_portfolio(group_number: int) -> dict:
-    tab = _get_tab(TAB_PORTFOLIOS)
-    rows = tab.get_all_records()
+    rows = _read_portfolios_records()
     portfolio = {}
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
@@ -163,6 +191,7 @@ def save_portfolio(group_number: int, portfolio: dict):
     ]
     if new_rows:
         tab.append_rows(new_rows, value_input_option="USER_ENTERED")
+    _invalidate_cache()
 
 
 def _find_cash_row(group_number: int):
@@ -177,12 +206,13 @@ def _find_cash_row(group_number: int):
 
 
 def get_cash(group_number: int) -> float:
-    tab = _get_tab(TAB_CASH)
-    rows = tab.get_all_records()
+    rows = _read_cash_records()
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
             return safe_float(r.get("cash", INITIAL_CAPITAL), INITIAL_CAPITAL)
+    tab = _get_tab(TAB_CASH)
     tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
+    _invalidate_cache()
     return float(INITIAL_CAPITAL)
 
 
@@ -194,6 +224,7 @@ def set_cash(group_number: int, amount: float):
         tab.append_row([group_number, amount], value_input_option="USER_ENTERED")
     else:
         tab.update_cell(row, 2, amount)
+    _invalidate_cache()
 
 
 def decrease_cash(group_number: int, amount: float) -> bool:
@@ -219,11 +250,11 @@ def record_trade(group_number: int, trade: dict):
         float(trade.get("quantity", 0)),
         float(trade.get("price", 0)),
     ], value_input_option="USER_ENTERED")
+    _invalidate_cache()
 
 
 def get_trades(group_number: int) -> list:
-    tab = _get_tab(TAB_TRADES)
-    rows = tab.get_all_records()
+    rows = _read_trades_records()
     result = []
     for r in rows:
         if str(r.get("group_number")) == str(group_number):
@@ -241,8 +272,7 @@ def get_trades(group_number: int) -> list:
 
 
 def get_all_trades() -> dict:
-    tab = _get_tab(TAB_TRADES)
-    rows = tab.get_all_records()
+    rows = _read_trades_records()
     result = {}
     for r in rows:
         key = str(r.get("group_number"))
@@ -277,9 +307,7 @@ def reset_group(group_number: int):
             tab_p.delete_rows(row_idx)
         except Exception as e:
             print(f"Error deleting portfolio row: {e}")
-
     set_cash(group_number, INITIAL_CAPITAL)
-
     tab_t = _get_tab(TAB_TRADES)
     all_trades = tab_t.get_all_values()
     trade_rows_to_delete = []
@@ -293,16 +321,17 @@ def reset_group(group_number: int):
             tab_t.delete_rows(row_idx)
         except Exception as e:
             print(f"Error deleting trade row: {e}")
+    _invalidate_cache()
 
 
 def reset_all_groups():
     groups = get_all_groups()
     for key in groups.keys():
         reset_group(int(key))
+    _invalidate_cache()
 
 
 def delete_all_data():
-    """BORRADO TOTAL: elimina todos los grupos, posiciones, cash y trades."""
     for tab_name in [TAB_GROUPS, TAB_PORTFOLIOS, TAB_CASH, TAB_TRADES]:
         tab = _get_tab(tab_name)
         all_rows = tab.get_all_values()
@@ -312,3 +341,4 @@ def delete_all_data():
                     tab.delete_rows(row_idx)
                 except Exception as e:
                     print(f"Error deleting row {row_idx} in {tab_name}: {e}")
+    _invalidate_cache()
