@@ -95,7 +95,7 @@ bench_price = bench_prices.get(BENCHMARK_TICKER, {}).get('price')
 c1, c2, c3 = st.columns(3)
 c1.metric("Grupos Registrados", total_groups)
 c2.metric("AUM Total", f"${total_aum/1e6:.1f}M")
-c3.metric("COLCAP", f"${bench_price:,.0f}" if bench_price else "N/A")
+c3.metric("COLCAP", f"${bench_price:,.2f}" if bench_price else "N/A")
 
 st.divider()
 
