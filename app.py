@@ -516,23 +516,38 @@ with tab_trade:
             )
             buy_price = prices.get(buy_ticker, {}).get("price")
 
-            if buy_price:
+           if buy_price:
                 st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
 
+                # Handle "use all" flag BEFORE creating the widget
+                if st.session_state.get("_use_all_cash", False):
+                    default_amount = int(cash)
+                    st.session_state["_use_all_cash"] = False
+                else:
+                    default_amount = st.session_state.get("buy_amount", 0)
+                    if default_amount > int(cash):
+                        default_amount = 0
+
+                # Max input = cash disponible
                 buy_amount = st.number_input(
                     f"Monto a invertir (máx. ${cash:,.0f})",
                     min_value=0,
                     max_value=int(cash),
+                    value=default_amount,
                     step=100_000,
                     key="buy_amount"
                 )
 
+                # Botón "Usar todo" - solo activa el flag y rerunea
                 col_a, col_b = st.columns([1, 1])
                 with col_a:
                     if st.button("💯 Usar todo", key="btn_all_cash"):
-                        st.session_state.buy_amount = int(cash)
+                        st.session_state["_use_all_cash"] = True
                         st.rerun()
 
+                buy_qty = buy_amount / buy_price if buy_price > 0 else 0
+                if buy_qty > 0:
+                    st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
                 buy_qty = buy_amount / buy_price if buy_price > 0 else 0
                 if buy_qty > 0:
                     st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
