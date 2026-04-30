@@ -1,3 +1,244 @@
+"""
+Storage module - Google Sheets backend con caching agresivo
+"""
+
+import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime
+import re
+
+INITIAL_CAPITAL = 100_000_000
+
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+
+TAB_GROUPS = "Groups"
+TAB_PORTFOLIOS = "Portfolios"
+TAB_CASH = "Cash"
+TAB_TRADES = "Trades"
+
+CACHE_TTL = 30
+
+
+def safe_float(value, default=0.0):
+    if value is None or value == "":
+        return float(default)
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = str(value).strip()
+    if not s:
+        return float(default)
+    s = re.sub(r"[^\d.,\-]", "", s)
+    if not s:
+        return float(default)
+    if "." in s and "," in s:
+        if s.rfind(".") > s.rfind(","):
+            s = s.replace(",", "")
+        else:
+            s = s.replace(".", "").replace(",", ".")
+    elif "." in s:
+        if s.count(".") > 1:
+            s = s.replace(".", "")
+        else:
+            parts = s.split(".")
+            if len(parts[1]) == 3 and len(parts[0]) <= 3:
+                s = s.replace(".", "")
+    elif "," in s:
+        if s.count(",") > 1:
+            s = s.replace(",", "")
+        else:
+            parts = s.split(",")
+            if len(parts[1]) == 3 and len(parts[0]) <= 3:
+                s = s.replace(",", "")
+            else:
+                s = s.replace(",", ".")
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return float(default)
+
+
+@st.cache_resource(ttl=3600)
+def _get_gsheet_client():
+    creds = Credentials.from_service_account_info(
+        dict(st.secrets["gcp_service_account"]),
+        scopes=SCOPES,
+    )
+    return gspread.authorize(creds)
+
+
+@st.cache_resource(ttl=3600)
+def _get_sheet():
+    client = _get_gsheet_client()
+    sheet_name = st.secrets.get("sheet_name", "Capital Markets DB")
+    return client.open(sheet_name)
+
+
+def _get_tab(tab_name: str):
+    return _get_sheet().worksheet(tab_name)
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_groups_records():
+    return _get_tab(TAB_GROUPS).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_portfolios_records():
+    return _get_tab(TAB_PORTFOLIOS).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_cash_records():
+    return _get_tab(TAB_CASH).get_all_records()
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _read_trades_records():
+    return _get_tab(TAB_TRADES).get_all_records()
+
+
+def _invalidate_cache():
+    _read_groups_records.clear()
+    _read_portfolios_records.clear()
+    _read_cash_records.clear()
+    _read_trades_records.clear()
+
+
+def register_group(group_number: int, nickname: str, captain: str, password: str) -> bool:
+    rows = _read_groups_records()
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number):
+            return False
+    tab = _get_tab(TAB_GROUPS)
+    tab.append_row([
+        group_number, nickname, captain, str(password),
+        datetime.now().isoformat(),
+    ], value_input_option="RAW")
+    cash_tab = _get_tab(TAB_CASH)
+    cash_tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
+    _invalidate_cache()
+    return True
+
+
+def authenticate(group_number: int, password: str) -> dict | None:
+    rows = _read_groups_records()
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number) and str(r.get("password")) == str(password):
+            return {
+                "group_number": int(r["group_number"]),
+                "nickname": r["nickname"],
+                "captain": r["captain"],
+                "password": r["password"],
+                "initial_capital": INITIAL_CAPITAL,
+                "created_at": r.get("created_at", ""),
+            }
+    return None
+
+
+def get_all_groups() -> dict:
+    rows = _read_groups_records()
+    result = {}
+    for r in rows:
+        key = str(r.get("group_number"))
+        if not key or key == "":
+            continue
+        result[key] = {
+            "group_number": int(r["group_number"]),
+            "nickname": r["nickname"],
+            "captain": r["captain"],
+            "password": r["password"],
+            "initial_capital": INITIAL_CAPITAL,
+            "created_at": r.get("created_at", ""),
+        }
+    return result
+
+
+def get_portfolio(group_number: int) -> dict:
+    rows = _read_portfolios_records()
+    portfolio = {}
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number):
+            ticker = r.get("ticker")
+            qty = safe_float(r.get("quantity", 0))
+            if ticker and qty > 0:
+                portfolio[ticker] = qty
+    return portfolio
+
+
+def save_portfolio(group_number: int, portfolio: dict):
+    tab = _get_tab(TAB_PORTFOLIOS)
+    all_rows = tab.get_all_values()
+    rows_to_delete = []
+    for i, row in enumerate(all_rows):
+        if i == 0:
+            continue
+        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
+            rows_to_delete.append(i + 1)
+    for row_idx in sorted(rows_to_delete, reverse=True):
+        try:
+            tab.delete_rows(row_idx)
+        except Exception as e:
+            print(f"Error deleting row {row_idx}: {e}")
+    new_rows = [
+        [group_number, ticker, float(qty)]
+        for ticker, qty in portfolio.items()
+        if qty > 0.0001
+    ]
+    if new_rows:
+        tab.append_rows(new_rows, value_input_option="USER_ENTERED")
+    _invalidate_cache()
+
+
+def _find_cash_row(group_number: int):
+    tab = _get_tab(TAB_CASH)
+    col = tab.col_values(1)
+    for i, val in enumerate(col):
+        if i == 0:
+            continue
+        if str(val).strip() == str(group_number):
+            return i + 1
+    return None
+
+
+def get_cash(group_number: int) -> float:
+    rows = _read_cash_records()
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number):
+            return safe_float(r.get("cash", INITIAL_CAPITAL), INITIAL_CAPITAL)
+    tab = _get_tab(TAB_CASH)
+    tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
+    _invalidate_cache()
+    return float(INITIAL_CAPITAL)
+
+
+def set_cash(group_number: int, amount: float):
+    tab = _get_tab(TAB_CASH)
+    row = _find_cash_row(group_number)
+    amount = max(0.0, float(amount))
+    if row is None:
+        tab.append_row([group_number, amount], value_input_option="USER_ENTERED")
+    else:
+        tab.update_cell(row, 2, amount)
+    _invalidate_cache()
+
+
+def decrease_cash(group_number: int, amount: float) -> bool:
+    current = get_cash(group_number)
+    if amount > current + 0.01:
+        return False
+    set_cash(group_number, current - amount)
+    return True
+
+
+def increase_cash(group_number: int, amount: float):
+    current = get_cash(group_number)
+    set_cash(group_number, current + amount)
+
+
 def record_trade(group_number: int, trade: dict):
     tab = _get_tab(TAB_TRADES)
     qty = float(trade.get("quantity", 0))
@@ -12,4 +253,95 @@ def record_trade(group_number: int, trade: dict):
         price,
         amount,
     ], value_input_option="USER_ENTERED")
+    _invalidate_cache()
+
+
+def get_trades(group_number: int) -> list:
+    rows = _read_trades_records()
+    result = []
+    for r in rows:
+        if str(r.get("group_number")) == str(group_number):
+            qty = safe_float(r.get("quantity", 0))
+            price = safe_float(r.get("price", 0))
+            result.append({
+                "timestamp": r.get("timestamp", ""),
+                "action": r.get("action", ""),
+                "ticker": r.get("ticker", ""),
+                "quantity": qty,
+                "price": price,
+                "amount": qty * price,
+            })
+    return result
+
+
+def get_all_trades() -> dict:
+    rows = _read_trades_records()
+    result = {}
+    for r in rows:
+        key = str(r.get("group_number"))
+        if not key or key == "":
+            continue
+        if key not in result:
+            result[key] = []
+        qty = safe_float(r.get("quantity", 0))
+        price = safe_float(r.get("price", 0))
+        result[key].append({
+            "timestamp": r.get("timestamp", ""),
+            "action": r.get("action", ""),
+            "ticker": r.get("ticker", ""),
+            "quantity": qty,
+            "price": price,
+            "amount": qty * price,
+        })
+    return result
+
+
+def reset_group(group_number: int):
+    tab_p = _get_tab(TAB_PORTFOLIOS)
+    all_rows = tab_p.get_all_values()
+    rows_to_delete = []
+    for i, row in enumerate(all_rows):
+        if i == 0:
+            continue
+        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
+            rows_to_delete.append(i + 1)
+    for row_idx in sorted(rows_to_delete, reverse=True):
+        try:
+            tab_p.delete_rows(row_idx)
+        except Exception as e:
+            print(f"Error deleting portfolio row: {e}")
+    set_cash(group_number, INITIAL_CAPITAL)
+    tab_t = _get_tab(TAB_TRADES)
+    all_trades = tab_t.get_all_values()
+    trade_rows_to_delete = []
+    for i, row in enumerate(all_trades):
+        if i == 0:
+            continue
+        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
+            trade_rows_to_delete.append(i + 1)
+    for row_idx in sorted(trade_rows_to_delete, reverse=True):
+        try:
+            tab_t.delete_rows(row_idx)
+        except Exception as e:
+            print(f"Error deleting trade row: {e}")
+    _invalidate_cache()
+
+
+def reset_all_groups():
+    groups = get_all_groups()
+    for key in groups.keys():
+        reset_group(int(key))
+    _invalidate_cache()
+
+
+def delete_all_data():
+    for tab_name in [TAB_GROUPS, TAB_PORTFOLIOS, TAB_CASH, TAB_TRADES]:
+        tab = _get_tab(tab_name)
+        all_rows = tab.get_all_values()
+        if len(all_rows) > 1:
+            for row_idx in range(len(all_rows), 1, -1):
+                try:
+                    tab.delete_rows(row_idx)
+                except Exception as e:
+                    print(f"Error deleting row {row_idx} in {tab_name}: {e}")
     _invalidate_cache()
