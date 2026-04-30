@@ -375,6 +375,7 @@ with c2:
         st.rerun()
 
 with st.spinner("Cargando precios del mercado..."):
+    _invalidate_cache()  # Always read fresh data
     tickers_list = list(TRADEABLE_ASSETS.keys())
     prices = get_latest_prices(tickers_list)
     portfolio = get_portfolio(group_num)
