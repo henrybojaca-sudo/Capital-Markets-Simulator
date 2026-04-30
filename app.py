@@ -1,6 +1,5 @@
 """
 Capital Markets Simulator - Main App
-Diseño FinPulse + Control de efectivo + Fix de consistencia de portafolio
 """
 
 import streamlit as st
@@ -26,9 +25,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ============================================================
-# CSS
-# ============================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
@@ -93,7 +89,6 @@ h1, h2, h3 {
     background: rgba(100, 116, 139, 0.3) !important;
     color: #64748b !important;
     cursor: not-allowed !important;
-    transform: none !important;
 }
 
 .brand {
@@ -250,7 +245,6 @@ h1, h2, h3 {
     font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 .cash-badge-value {
     font-family: 'Space Grotesk', sans-serif;
@@ -268,15 +262,14 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# Session state
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "group_info" not in st.session_state:
     st.session_state.group_info = None
 
-# ============================================================
+# =============================================================
 # LANDING / LOGIN
-# ============================================================
+# =============================================================
 if not st.session_state.authenticated:
     st.markdown("""
     <div class="brand">
@@ -360,9 +353,9 @@ if not st.session_state.authenticated:
     st.markdown('<div class="footer-text">20 acciones BVC · USD/COP · Benchmark COLCAP · 100M COP capital inicial</div>', unsafe_allow_html=True)
     st.stop()
 
-# ============================================================
+# =============================================================
 # AUTHENTICATED
-# ============================================================
+# =============================================================
 group = st.session_state.group_info
 group_num = group["group_number"]
 
@@ -516,7 +509,7 @@ with tab_trade:
             )
             buy_price = prices.get(buy_ticker, {}).get("price")
 
-           if buy_price:
+            if buy_price:
                 st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
 
                 # Handle "use all" flag BEFORE creating the widget
@@ -528,7 +521,6 @@ with tab_trade:
                     if default_amount > int(cash):
                         default_amount = 0
 
-                # Max input = cash disponible
                 buy_amount = st.number_input(
                     f"Monto a invertir (máx. ${cash:,.0f})",
                     min_value=0,
@@ -538,16 +530,10 @@ with tab_trade:
                     key="buy_amount"
                 )
 
-                # Botón "Usar todo" - solo activa el flag y rerunea
-                col_a, col_b = st.columns([1, 1])
-                with col_a:
-                    if st.button("💯 Usar todo", key="btn_all_cash"):
-                        st.session_state["_use_all_cash"] = True
-                        st.rerun()
+                if st.button("💯 Usar todo", key="btn_all_cash"):
+                    st.session_state["_use_all_cash"] = True
+                    st.rerun()
 
-                buy_qty = buy_amount / buy_price if buy_price > 0 else 0
-                if buy_qty > 0:
-                    st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
                 buy_qty = buy_amount / buy_price if buy_price > 0 else 0
                 if buy_qty > 0:
                     st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
@@ -558,7 +544,6 @@ with tab_trade:
                     elif buy_amount > cash + 0.01:
                         st.error(f"Efectivo insuficiente. Disponible: ${cash:,.0f}")
                     else:
-                        # CRITICAL: invalidate cache and read fresh portfolio from sheet
                         _invalidate_cache()
                         fresh_portfolio = get_portfolio(group_num)
 
@@ -605,7 +590,6 @@ with tab_trade:
                 if sell_pct <= 0:
                     st.error("Selecciona % mayor a 0")
                 else:
-                    # CRITICAL: invalidate cache and read fresh portfolio
                     _invalidate_cache()
                     fresh_portfolio = get_portfolio(group_num)
                     fresh_qty = fresh_portfolio.get(sell_ticker, 0)
@@ -624,7 +608,6 @@ with tab_trade:
                         "amount": actual_sell_amount,
                     })
                     st.success(f"✅ Vendido: {actual_sell_qty:,.4f} de {sell_ticker}")
-                    st.info(f"💡 Ahora tienes ${cash + actual_sell_amount:,.0f} para reinvertir")
                     st.rerun()
 
 # ========== HISTORY ==========
