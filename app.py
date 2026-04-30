@@ -1,6 +1,6 @@
 """
 Capital Markets Simulator - Main App
-Diseño FinPulse + Control de efectivo disponible
+Diseño FinPulse + Control de efectivo + Fix de consistencia de portafolio
 """
 
 import streamlit as st
@@ -12,6 +12,7 @@ from data_loader import get_latest_prices
 from storage import (
     register_group, authenticate, get_portfolio, save_portfolio,
     record_trade, get_trades, get_cash, decrease_cash, increase_cash,
+    _invalidate_cache,
 )
 from portfolio import (
     calculate_invested_value, calculate_total_value, portfolio_composition,
@@ -26,137 +27,244 @@ st.set_page_config(
 )
 
 # ============================================================
-# CUSTOM CSS
+# CSS
 # ============================================================
 st.markdown("""
 <style>
-/* ══ FUENTE ══════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; }
+.stApp {
+    background: linear-gradient(135deg, #0a0e27 0%, #141832 50%, #1a1245 100%) !important;
+    font-family: 'Inter', sans-serif;
+}
+#MainMenu, footer, header {visibility: hidden;}
 
-#MainMenu, footer, header { visibility: hidden; }
-
-/* ══ TEXTO NATIVO DE STREAMLIT ═══════════════════ */
-p, .stMarkdown p, [data-testid="stMarkdown"] p { font-size: 16px !important; line-height: 1.6 !important; }
-[data-testid="stCaptionContainer"] p, .stCaption p { font-size: 15px !important; color: #9ba3b2 !important; }
-label, .stTextInput label, .stNumberInput label, .stSelectbox label,
-.stTextInput label p, .stNumberInput label p, .stSelectbox label p {
-    font-size: 14px !important; font-weight: 600 !important; letter-spacing: 0.04em !important;
+h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: #f8fafc !important;
+    letter-spacing: -0.02em;
 }
 
-/* ══ INPUTS ══════════════════════════════════════ */
-input, textarea, .stTextInput input, .stNumberInput input {
-    font-size: 17px !important; padding: 12px 16px !important;
-    border-radius: 8px !important;
+.stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label {
+    color: #cbd5e1 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
 }
-.stSelectbox > div > div { font-size: 16px !important; border-radius: 8px !important; }
+.stTextInput input, .stNumberInput input {
+    background: rgba(10, 14, 39, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+}
+.stTextInput input:focus, .stNumberInput input:focus {
+    border-color: #2dd4bf !important;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+.stTextInput input::placeholder, .stNumberInput input::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+.stSelectbox > div > div {
+    background: rgba(10, 14, 39, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+}
 
-/* ══ BOTONES ═════════════════════════════════════ */
 .stButton > button {
-    background: #2196f3 !important; color: #fff !important;
-    border: none !important; border-radius: 8px !important;
-    padding: 14px 20px !important; font-size: 16px !important;
-    font-weight: 700 !important; width: 100%; transition: background 0.15s;
+    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
+    color: #0a0e27 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    width: 100%;
+    transition: all 0.2s;
 }
-.stButton > button:hover { background: #1565c0 !important; }
-.stButton > button:disabled { opacity: 0.4 !important; }
-
-/* ══ TABS ════════════════════════════════════════ */
-.stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2a2e39 !important; gap: 0 !important; }
-.stTabs [data-baseweb="tab"] {
-    font-size: 17px !important; font-weight: 600 !important;
-    padding: 14px 28px !important; border: none !important;
-    background: transparent !important;
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(45, 212, 191, 0.3) !important;
 }
-.stTabs [data-baseweb="tab"] p { font-size: 17px !important; font-weight: 600 !important; }
-.stTabs [aria-selected="true"] { border-bottom: 3px solid #2196f3 !important; }
-
-/* ══ ALERTAS NATIVAS ═════════════════════════════ */
-[data-testid="stAlert"] p { font-size: 15px !important; }
-
-/* ══ STAT BOXES ══════════════════════════════════ */
-.stat-box {
-    background: #1e2433; border: 1px solid #2a2e39;
-    border-radius: 12px; padding: 24px 20px;
-}
-.stat-box-cash { border-top: 3px solid #ff9800; }
-.stat-label {
-    font-size: 12px !important; text-transform: uppercase;
-    letter-spacing: 0.09em; font-weight: 700 !important;
-    margin-bottom: 10px; opacity: 0.7;
-}
-.stat-value {
-    font-size: 2.2rem !important; font-weight: 800 !important;
-    line-height: 1.1; font-variant-numeric: tabular-nums;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.pos-ret { color: #26c6a4 !important; }
-.neg-ret { color: #ef5350 !important; }
-.cash-value { color: #ff9800 !important; }
-
-/* ══ GROUP HEADER ════════════════════════════════ */
-.group-header {
-    background: #1e2433; border: 1px solid #2a2e39;
-    border-left: 4px solid #2196f3;
-    border-radius: 10px; padding: 18px 24px; margin-bottom: 24px;
-}
-.group-title { font-size: 1.6rem !important; font-weight: 700 !important; margin: 0; }
-.group-sub { font-size: 15px !important; margin-top: 4px; opacity: 0.7; }
-
-/* ══ ALERTAS CUSTOM ══════════════════════════════ */
-.rules-box {
-    background: rgba(255,152,0,0.1); border-left: 4px solid #ff9800;
-    border-radius: 8px; padding: 14px 18px;
-    color: #ffb74d !important; font-size: 15px !important;
-    margin: 14px 0; line-height: 1.6;
-}
-.alert-box-red {
-    background: rgba(239,83,80,0.1); border-left: 4px solid #ef5350;
-    border-radius: 8px; padding: 14px 18px;
-    color: #ef9a9a !important; font-size: 15px !important; margin: 14px 0;
-}
-.alert-box-green {
-    background: rgba(38,198,164,0.1); border-left: 4px solid #26c6a4;
-    border-radius: 8px; padding: 14px 18px;
-    color: #80cbc4 !important; font-size: 15px !important; margin: 14px 0;
+.stButton > button:disabled {
+    background: rgba(100, 116, 139, 0.3) !important;
+    color: #64748b !important;
+    cursor: not-allowed !important;
+    transform: none !important;
 }
 
-/* ══ BRAND / LANDING ═════════════════════════════ */
 .brand {
-    display: flex; align-items: center; gap: 14px;
-    font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem; font-weight: 600;
+    color: #2dd4bf; margin-bottom: 1rem;
 }
 .brand-icon {
-    width: 44px; height: 44px; background: #2196f3;
-    border-radius: 10px; display: flex; align-items: center;
-    justify-content: center; font-size: 24px;
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
 }
-.hero-title { font-size: 3rem !important; font-weight: 800 !important; line-height: 1.1; margin-bottom: 1rem; }
+
+.hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 3rem !important;
+    font-weight: 700;
+    line-height: 1.05;
+    margin-bottom: 1rem;
+    color: #f8fafc;
+}
 .hero-accent {
-    background: linear-gradient(90deg, #2196f3, #26c6a4);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    background: linear-gradient(90deg, #2dd4bf 0%, #4ade80 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
-.hero-sub { font-size: 17px !important; line-height: 1.7; margin-bottom: 1.6rem; opacity: 0.75; }
-.cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; max-width: 520px; }
-.cat-card { background: #1e2433; border: 1px solid #2a2e39; border-top: 3px solid; border-radius: 10px; padding: 16px 8px; text-align: center; }
-.cat-icon { font-size: 24px; margin-bottom: 8px; display: block; }
-.cat-name { font-size: 12px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
-.form-title { font-size: 1.35rem !important; font-weight: 700 !important; margin-bottom: 4px; }
-.form-sub { font-size: 15px !important; margin-bottom: 1.3rem; opacity: 0.7; }
+.hero-sub {
+    color: #94a3b8; font-size: 1rem;
+    line-height: 1.6; margin-bottom: 1.5rem;
+}
 
-/* ══ CASH BADGE ══════════════════════════════════ */
+.cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px; max-width: 580px;
+}
+.cat-card {
+    background: rgba(20, 24, 50, 0.6);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    border-top: 3px solid;
+}
+.cat-icon { font-size: 22px; margin-bottom: 6px; display: block;}
+.cat-name { font-size: 12px; color: #cbd5e1; font-weight: 500;}
+
+.stat-box {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 14px;
+    padding: 18px;
+}
+.stat-box-cash {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+}
+.stat-label {
+    font-size: 11px; color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.1;
+}
+.pos-ret { color: #4ade80 !important; }
+.neg-ret { color: #f87171 !important; }
+.cash-value { color: #facc15 !important; }
+
+.stTabs [data-baseweb="tab-list"] { gap: 8px; background: transparent; }
+.stTabs [data-baseweb="tab"] {
+    background: rgba(20, 24, 50, 0.6) !important;
+    border-radius: 10px !important;
+    padding: 10px 18px !important;
+    color: #94a3b8 !important;
+    font-weight: 500;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%) !important;
+    color: #2dd4bf !important;
+    border-color: rgba(45, 212, 191, 0.3) !important;
+}
+
+.group-header {
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
+    border: 1px solid rgba(45, 212, 191, 0.2);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+.group-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+.group-sub { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
+
+.rules-box {
+    background: rgba(250, 204, 21, 0.08);
+    border-left: 3px solid #facc15;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fef3c7;
+    font-size: 13px;
+    margin: 12px 0;
+}
+.alert-box-red {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid #ef4444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fecaca;
+    font-size: 13px;
+    margin: 12px 0;
+}
+
+.form-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 4px;
+}
+.form-sub {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+}
+
 .cash-badge {
-    background: #1e2433; border: 1px solid rgba(255,152,0,0.3);
-    border-left: 4px solid #ff9800; border-radius: 10px;
-    padding: 18px 22px; margin-bottom: 18px;
-    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-.cash-badge-label { color: #ff9800 !important; font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.07em; }
-.cash-badge-value { color: #ff9800 !important; font-size: 1.8rem !important; font-weight: 800 !important; font-variant-numeric: tabular-nums; }
+.cash-badge-label {
+    color: #fde68a;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.cash-badge-value {
+    font-family: 'Space Grotesk', sans-serif;
+    color: #facc15;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
 
-/* ══ FOOTER ══════════════════════════════════════ */
-.footer-text { font-size: 13px !important; text-align: center; margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid #2a2e39; opacity: 0.4; }
+.footer-text {
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 2rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -167,7 +275,7 @@ if "group_info" not in st.session_state:
     st.session_state.group_info = None
 
 # ============================================================
-# LANDING / LOGIN (unchanged)
+# LANDING / LOGIN
 # ============================================================
 if not st.session_state.authenticated:
     st.markdown("""
@@ -283,7 +391,6 @@ cash = get_cash(group_num)
 total_value = invested_value + cash
 total_return = calculate_return(total_value, INITIAL_CAPITAL)
 
-# 5 stat boxes: Inicial, Invertido, Efectivo, Valor Total, Return
 s1, s2, s3, s4, s5 = st.columns(5)
 with s1:
     st.markdown(f"""
@@ -325,7 +432,6 @@ with s5:
 
 st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
-# Alert if cash is significant (should be close to 0 at end of day)
 if cash > 1000 and any(q > 0 for q in portfolio.values()):
     st.markdown(f"""
     <div class="rules-box">
@@ -373,7 +479,6 @@ with tab_port:
 
 # ========== TRADE ==========
 with tab_trade:
-    # Persistent cash badge at top of trade tab
     st.markdown(f"""
     <div class="cash-badge">
         <div>
@@ -414,7 +519,6 @@ with tab_trade:
             if buy_price:
                 st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
 
-                # Max input = cash disponible
                 buy_amount = st.number_input(
                     f"Monto a invertir (máx. ${cash:,.0f})",
                     min_value=0,
@@ -423,28 +527,30 @@ with tab_trade:
                     key="buy_amount"
                 )
 
-                # Botón "Usar todo"
                 col_a, col_b = st.columns([1, 1])
                 with col_a:
                     if st.button("💯 Usar todo", key="btn_all_cash"):
                         st.session_state.buy_amount = int(cash)
                         st.rerun()
 
-                buy_qty = round(buy_amount / buy_price, 6) if buy_price > 0 else 0
+                buy_qty = buy_amount / buy_price if buy_price > 0 else 0
                 if buy_qty > 0:
                     st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
 
                 if st.button("Ejecutar Compra →", type="primary", key="btn_buy"):
                     if buy_amount <= 0:
                         st.error("Monto debe ser mayor a 0")
-                    elif buy_amount > cash:
+                    elif buy_amount > cash + 0.01:
                         st.error(f"Efectivo insuficiente. Disponible: ${cash:,.0f}")
                     else:
-                        # Execute
+                        # CRITICAL: invalidate cache and read fresh portfolio from sheet
+                        _invalidate_cache()
+                        fresh_portfolio = get_portfolio(group_num)
+
                         ok = decrease_cash(group_num, buy_amount)
                         if ok:
-                            portfolio[buy_ticker] = portfolio.get(buy_ticker, 0) + buy_qty
-                            save_portfolio(group_num, portfolio)
+                            fresh_portfolio[buy_ticker] = fresh_portfolio.get(buy_ticker, 0) + buy_qty
+                            save_portfolio(group_num, fresh_portfolio)
                             record_trade(group_num, {
                                 "action": "BUY", "ticker": buy_ticker,
                                 "quantity": buy_qty, "price": buy_price,
@@ -484,18 +590,26 @@ with tab_trade:
                 if sell_pct <= 0:
                     st.error("Selecciona % mayor a 0")
                 else:
-                    increase_cash(group_num, sell_amount)
-                    portfolio[sell_ticker] = current_qty - sell_qty
-                    if portfolio[sell_ticker] < 0.0001:
-                        portfolio[sell_ticker] = 0
-                    save_portfolio(group_num, portfolio)
+                    # CRITICAL: invalidate cache and read fresh portfolio
+                    _invalidate_cache()
+                    fresh_portfolio = get_portfolio(group_num)
+                    fresh_qty = fresh_portfolio.get(sell_ticker, 0)
+
+                    actual_sell_qty = fresh_qty * sell_pct / 100
+                    actual_sell_amount = actual_sell_qty * sell_price if sell_price else 0
+
+                    fresh_portfolio[sell_ticker] = fresh_qty - actual_sell_qty
+                    if fresh_portfolio[sell_ticker] < 0.0001:
+                        fresh_portfolio[sell_ticker] = 0
+                    save_portfolio(group_num, fresh_portfolio)
+                    increase_cash(group_num, actual_sell_amount)
                     record_trade(group_num, {
                         "action": "SELL", "ticker": sell_ticker,
-                        "quantity": sell_qty, "price": sell_price,
-                        "amount": sell_amount,
+                        "quantity": actual_sell_qty, "price": sell_price,
+                        "amount": actual_sell_amount,
                     })
-                    st.success(f"✅ Vendido: {sell_qty:,.4f} de {sell_ticker}")
-                    st.info(f"💡 Ahora tienes ${cash + sell_amount:,.0f} para reinvertir")
+                    st.success(f"✅ Vendido: {actual_sell_qty:,.4f} de {sell_ticker}")
+                    st.info(f"💡 Ahora tienes ${cash + actual_sell_amount:,.0f} para reinvertir")
                     st.rerun()
 
 # ========== HISTORY ==========
