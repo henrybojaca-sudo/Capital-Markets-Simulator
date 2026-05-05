@@ -1,5 +1,6 @@
 """
 Storage module - Google Sheets backend con caching agresivo
+Guarda números como strings con punto decimal para evitar problemas de locale
 """
 
 import streamlit as st
@@ -24,6 +25,7 @@ CACHE_TTL = 30
 
 
 def safe_float(value, default=0.0):
+    """Convierte cualquier valor a float de forma segura."""
     if value is None or value == "":
         return float(default)
     if isinstance(value, (int, float)):
@@ -184,12 +186,12 @@ def save_portfolio(group_number: int, portfolio: dict):
         except Exception as e:
             print(f"Error deleting row {row_idx}: {e}")
     new_rows = [
-        [group_number, ticker, float(qty)]
+        [group_number, ticker, f"{float(qty):.6f}"]
         for ticker, qty in portfolio.items()
         if qty > 0.0001
     ]
     if new_rows:
-        tab.append_rows(new_rows, value_input_option="USER_ENTERED")
+        tab.append_rows(new_rows, value_input_option="RAW")
     _invalidate_cache()
 
 
@@ -249,10 +251,10 @@ def record_trade(group_number: int, trade: dict):
         datetime.now().isoformat(),
         trade.get("action", ""),
         trade.get("ticker", ""),
-        qty,
-        price,
-        amount,
-    ], value_input_option="USER_ENTERED")
+        f"{qty:.6f}",
+        f"{price:.2f}",
+        f"{amount:.2f}",
+    ], value_input_option="RAW")
     _invalidate_cache()
 
 
