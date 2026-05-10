@@ -1,5 +1,6 @@
 """
 Capital Markets Simulator - Main App
+Versión mejorada con mejor legibilidad visual
 """
 
 import streamlit as st
@@ -27,7 +28,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 .stApp {
     background: linear-gradient(135deg, #0a0e27 0%, #141832 50%, #1a1245 100%) !important;
@@ -43,17 +44,17 @@ h1, h2, h3 {
 
 .stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label {
     color: #cbd5e1 !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    margin-bottom: 4px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
 }
 .stTextInput input, .stNumberInput input {
     background: rgba(10, 14, 39, 0.8) !important;
     border: 1px solid rgba(148, 163, 184, 0.25) !important;
     border-radius: 10px !important;
     color: #f8fafc !important;
-    padding: 10px 14px !important;
-    font-size: 14px !important;
+    padding: 12px 16px !important;
+    font-size: 16px !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
     border-color: #2dd4bf !important;
@@ -68,6 +69,7 @@ h1, h2, h3 {
     border: 1px solid rgba(148, 163, 184, 0.25) !important;
     border-radius: 10px !important;
     color: #f8fafc !important;
+    font-size: 16px !important;
 }
 
 .stButton > button {
@@ -75,8 +77,9 @@ h1, h2, h3 {
     color: #0a0e27 !important;
     border: none !important;
     border-radius: 10px !important;
-    padding: 10px 20px !important;
-    font-weight: 600 !important;
+    padding: 12px 24px !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
     font-family: 'Space Grotesk', sans-serif !important;
     width: 100%;
     transition: all 0.2s;
@@ -91,18 +94,47 @@ h1, h2, h3 {
     cursor: not-allowed !important;
 }
 
+/* TABLA DEL PORTAFOLIO - MEJORADA */
+.stDataFrame {
+    font-size: 18px !important;
+}
+.stDataFrame table {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border-radius: 12px !important;
+}
+.stDataFrame thead tr th {
+    background: rgba(30, 41, 59, 0.8) !important;
+    color: #94a3b8 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 16px 20px !important;
+    border-bottom: 2px solid rgba(45, 212, 191, 0.3) !important;
+}
+.stDataFrame tbody tr td {
+    padding: 18px 20px !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #f1f5f9 !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+.stDataFrame tbody tr:hover {
+    background: rgba(45, 212, 191, 0.05) !important;
+}
+
 .brand {
     display: flex; align-items: center; gap: 12px;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.4rem; font-weight: 600;
+    font-size: 1.5rem; font-weight: 600;
     color: #2dd4bf; margin-bottom: 1rem;
 }
 .brand-icon {
-    width: 36px; height: 36px;
+    width: 40px; height: 40px;
     background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%);
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
 }
 
 .hero-title {
@@ -120,7 +152,7 @@ h1, h2, h3 {
     background-clip: text;
 }
 .hero-sub {
-    color: #94a3b8; font-size: 1rem;
+    color: #94a3b8; font-size: 1.1rem;
     line-height: 1.6; margin-bottom: 1.5rem;
 }
 
@@ -137,29 +169,29 @@ h1, h2, h3 {
     border-top: 3px solid;
 }
 .cat-icon { font-size: 22px; margin-bottom: 6px; display: block;}
-.cat-name { font-size: 12px; color: #cbd5e1; font-weight: 500;}
+.cat-name { font-size: 13px; color: #cbd5e1; font-weight: 600;}
 
 .stat-box {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%);
     border: 1px solid rgba(148, 163, 184, 0.15);
     border-radius: 14px;
-    padding: 18px;
+    padding: 20px;
 }
 .stat-box-cash {
     background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
     border: 1px solid rgba(250, 204, 21, 0.3);
 }
 .stat-label {
-    font-size: 11px; color: #64748b;
+    font-size: 12px; color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-weight: 700;
+    margin-bottom: 8px;
 }
 .stat-value {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 800;
     color: #f8fafc;
     line-height: 1.1;
 }
@@ -171,9 +203,10 @@ h1, h2, h3 {
 .stTabs [data-baseweb="tab"] {
     background: rgba(20, 24, 50, 0.6) !important;
     border-radius: 10px !important;
-    padding: 10px 18px !important;
+    padding: 12px 20px !important;
     color: #94a3b8 !important;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 15px !important;
     border: 1px solid rgba(148, 163, 184, 0.1);
 }
 .stTabs [aria-selected="true"] {
@@ -186,76 +219,79 @@ h1, h2, h3 {
     background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
     border: 1px solid rgba(45, 212, 191, 0.2);
     border-radius: 14px;
-    padding: 16px 20px;
+    padding: 18px 24px;
     margin-bottom: 20px;
 }
 .group-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: #f8fafc;
     margin: 0;
 }
-.group-sub { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
+.group-sub { color: #94a3b8; font-size: 0.95rem; margin-top: 4px; }
 
 .rules-box {
     background: rgba(250, 204, 21, 0.08);
     border-left: 3px solid #facc15;
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 14px 18px;
     color: #fef3c7;
-    font-size: 13px;
+    font-size: 15px;
+    font-weight: 500;
     margin: 12px 0;
 }
 .alert-box-red {
     background: rgba(239, 68, 68, 0.1);
     border-left: 3px solid #ef4444;
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 14px 18px;
     color: #fecaca;
-    font-size: 13px;
+    font-size: 15px;
+    font-weight: 500;
     margin: 12px 0;
 }
 
 .form-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 1.3rem;
+    font-weight: 700;
     color: #f8fafc;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .form-sub {
     color: #94a3b8;
-    font-size: 0.85rem;
-    margin-bottom: 1.2rem;
+    font-size: 0.95rem;
+    margin-bottom: 1.4rem;
 }
 
 .cash-badge {
     background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
     border: 1px solid rgba(250, 204, 21, 0.3);
     border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 .cash-badge-label {
     color: #fde68a;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 .cash-badge-value {
     font-family: 'Space Grotesk', sans-serif;
     color: #facc15;
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.3rem;
+    font-weight: 800;
 }
 
 .footer-text {
     color: #64748b;
-    font-size: 12px;
+    font-size: 13px;
     text-align: center;
     margin-top: 2rem;
 }
@@ -375,7 +411,7 @@ with c2:
         st.rerun()
 
 with st.spinner("Cargando precios del mercado..."):
-    _invalidate_cache()  # Always read fresh data
+    _invalidate_cache()
     tickers_list = list(TRADEABLE_ASSETS.keys())
     prices = get_latest_prices(tickers_list)
     portfolio = get_portfolio(group_num)
@@ -446,12 +482,7 @@ with tab_port:
     else:
         comp_df = portfolio_composition(portfolio, prices)
         st.dataframe(
-            comp_df.style.format({
-                "Cantidad": "{:,.0f}",
-                "Precio": "${:,.2f}",
-                "Valor (COP)": "${:,.0f}",
-                "Peso (%)": "{:.2f}%",
-            }),
+            comp_df,
             use_container_width=True,
             hide_index=True,
         )
@@ -467,6 +498,7 @@ with tab_port:
             plot_bgcolor="rgba(0,0,0,0)",
             font_color="#cbd5e1",
             font_family="Inter",
+            font_size=14,
             height=420,
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -477,7 +509,7 @@ with tab_trade:
     <div class="cash-badge">
         <div>
             <div class="cash-badge-label">💵 Efectivo Disponible</div>
-            <div style="color:#94a3b8; font-size:11px;">Solo puedes comprar hasta este monto</div>
+            <div style="color:#94a3b8; font-size:12px;">Solo puedes comprar hasta este monto</div>
         </div>
         <div class="cash-badge-value">${cash:,.0f} COP</div>
     </div>
@@ -513,7 +545,6 @@ with tab_trade:
             if buy_price:
                 st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
 
-                # Handle "use all" flag BEFORE creating the widget
                 if st.session_state.get("_use_all_cash", False):
                     default_amount = int(cash)
                     st.session_state["_use_all_cash"] = False
@@ -621,11 +652,7 @@ with tab_hist:
         df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"])
         df_hist = df_hist.sort_values("timestamp", ascending=False)
         st.dataframe(
-            df_hist.style.format({
-                "quantity": "{:,.4f}",
-                "price": "${:,.2f}",
-                "amount": "${:,.0f}",
-            }),
+            df_hist,
             use_container_width=True,
             hide_index=True,
         )
