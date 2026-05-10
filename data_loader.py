@@ -1,79 +1,85 @@
 """
-Módulo de datos: obtiene precios de cierre desde Yahoo Finance
+Data Loader - Yahoo Finance integration
+Fetches real-time prices for BVC stocks using correct Yahoo Finance symbols
 """
 
 import yfinance as yf
-import pandas as pd
-from datetime import datetime, timedelta
 import streamlit as st
+from typing import Dict, Optional
 
 
-@st.cache_data(ttl=3600)  # Cache 1 hora
-def get_latest_prices(tickers: list) -> dict:
+@st.cache_data(ttl=300)
+def get_latest_prices(tickers: list) -> Dict[str, Dict[str, Optional[float]]]:
     """
-    Obtiene el último precio de cierre disponible para cada ticker.
-    Retorna: {ticker: {"price": float, "date": str}}
+    Fetch latest prices from Yahoo Finance.
+    
+    Args:
+        tickers: List of internal ticker symbols (e.g., ["ECOPETROL.CL", "CIBEST.CL"])
+    
+    Returns:
+        Dict with structure:
+        {
+            "ECOPETROL.CL": {"price": 2620.0, "date": "2025-05-10"},
+            "CIBEST.CL": {"price": 74000.0, "date": "2025-05-10"},
+            ...
+        }
     """
+    from tickers import TRADEABLE_ASSETS
+    
     prices = {}
+    
     for ticker in tickers:
         try:
-            data = yf.Ticker(ticker).history(period="5d")
-            if not data.empty:
+            # Get the Yahoo Finance symbol from TRADEABLE_ASSETS config
+            asset_info = TRADEABLE_ASSETS.get(ticker, {})
+            yahoo_symbol = asset_info.get("yahoo_symbol", ticker)
+            
+            # Fetch price data from Yahoo Finance
+            yf_ticker = yf.Ticker(yahoo_symbol)
+            hist = yf_ticker.history(period="5d")
+            
+            if not hist.empty:
+                last_price = hist["Close"].iloc[-1]
+                last_date = hist.index[-1].strftime("%Y-%m-%d")
                 prices[ticker] = {
-                    "price": float(data["Close"].iloc[-1]),
-                    "date": data.index[-1].strftime("%Y-%m-%d"),
+                    "price": float(last_price),
+                    "date": last_date
                 }
             else:
-                prices[ticker] = {"price": None, "date": None}
+                # No data available
+                prices[ticker] = {
+                    "price": None,
+                    "date": None
+                }
+                
         except Exception as e:
-            prices[ticker] = {"price": None, "date": None, "error": str(e)}
+            # Error fetching data
+            print(f"Error fetching price for {ticker} (yahoo: {yahoo_symbol}): {e}")
+            prices[ticker] = {
+                "price": None,
+                "date": None
+            }
+    
     return prices
 
 
-@st.cache_data(ttl=3600)
-def get_historical_prices(tickers: list, start_date: str, end_date: str = None) -> pd.DataFrame:
+def get_benchmark_price() -> Optional[float]:
     """
-    Obtiene precios históricos de cierre.
+    Fetch COLCAP index price.
+    
+    Returns:
+        Current COLCAP value or None if unavailable
     """
-    if end_date is None:
-        end_date = datetime.today().strftime("%Y-%m-%d")
-
-    data = yf.download(
-        tickers,
-        start=start_date,
-        end=end_date,
-        progress=False,
-        auto_adjust=True,
-    )
-
-    if "Close" in data.columns.get_level_values(0):
-        close = data["Close"]
-    else:
-        close = data
-
-    if isinstance(close, pd.Series):
-        close = close.to_frame(name=tickers[0] if isinstance(tickers, list) else tickers)
-
-    return close
-
-
-def get_price_on_date(ticker: str, date: str) -> float | None:
-    """
-    Obtiene el precio de cierre en una fecha específica (o más cercana anterior).
-    """
+    from tickers import BENCHMARK_TICKER
+    
     try:
-        target = pd.to_datetime(date)
-        start = (target - timedelta(days=7)).strftime("%Y-%m-%d")
-        end = (target + timedelta(days=1)).strftime("%Y-%m-%d")
-
-        data = yf.Ticker(ticker).history(start=start, end=end)
-        if data.empty:
-            return None
-
-        data.index = data.index.tz_localize(None) if data.index.tz else data.index
-        valid = data.loc[data.index <= target]
-        if valid.empty:
-            return None
-        return float(valid["Close"].iloc[-1])
-    except Exception:
+        yf_ticker = yf.Ticker(BENCHMARK_TICKER)
+        hist = yf_ticker.history(period="1d")
+        
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+        return None
+        
+    except Exception as e:
+        print(f"Error fetching benchmark: {e}")
         return None
