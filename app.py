@@ -28,115 +28,159 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 .stApp {
     background: linear-gradient(135deg, #0a0e27 0%, #141832 50%, #1a1245 100%) !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* TABLA - FORCING STYLES */
-div[data-testid="stDataFrame"] {
+/* TABLA - TRIPLE SELECTOR FORCING */
+div[data-testid="stDataFrame"],
+div[data-testid="stDataFrame"] div,
+.stDataFrame,
+.dataframe {
+    font-size: 28px !important;
+}
+
+div[data-testid="stDataFrame"] table,
+div[data-testid="stDataFrame"] div table,
+.stDataFrame table,
+table.dataframe {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-radius: 14px !important;
+    font-size: 28px !important;
+}
+
+div[data-testid="stDataFrame"] thead th,
+div[data-testid="stDataFrame"] table thead th,
+.stDataFrame thead th,
+table.dataframe thead th {
+    background: rgba(30, 41, 59, 0.95) !important;
+    color: #cbd5e1 !important;
     font-size: 20px !important;
-}
-
-div[data-testid="stDataFrame"] table {
-    background: rgba(15, 23, 42, 0.8) !important;
-    border-radius: 12px !important;
-}
-
-div[data-testid="stDataFrame"] thead th {
-    background: rgba(30, 41, 59, 0.9) !important;
-    color: #94a3b8 !important;
-    font-size: 16px !important;
-    font-weight: 800 !important;
+    font-weight: 900 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
-    padding: 20px 24px !important;
-    border-bottom: 3px solid rgba(45, 212, 191, 0.4) !important;
+    letter-spacing: 0.1em !important;
+    padding: 28px 32px !important;
+    border-bottom: 4px solid rgba(45, 212, 191, 0.5) !important;
 }
 
-div[data-testid="stDataFrame"] tbody td {
-    padding: 22px 24px !important;
-    font-size: 22px !important;
-    font-weight: 700 !important;
-    color: #f1f5f9 !important;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+div[data-testid="stDataFrame"] tbody td,
+div[data-testid="stDataFrame"] table tbody td,
+.stDataFrame tbody td,
+table.dataframe tbody td {
+    padding: 32px 32px !important;
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid rgba(148, 163, 184, 0.2) !important;
+    line-height: 1.4 !important;
 }
 
-div[data-testid="stDataFrame"] tbody tr:hover td {
-    background: rgba(45, 212, 191, 0.08) !important;
+div[data-testid="stDataFrame"] tbody tr:hover td,
+.stDataFrame tbody tr:hover td {
+    background: rgba(45, 212, 191, 0.12) !important;
 }
 
 /* STAT BOXES */
 .stat-value {
     font-family: 'Space Grotesk', sans-serif !important;
-    font-size: 2.5rem !important;
+    font-size: 3rem !important;
     font-weight: 900 !important;
     color: #f8fafc !important;
 }
 
 .stat-label {
-    font-size: 13px !important;
-    font-weight: 800 !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
     color: #64748b !important;
+    text-transform: uppercase !important;
 }
+
+.stat-box {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 14px;
+    padding: 26px;
+}
+
+.stat-box-cash {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.pos-ret {color: #4ade80 !important;}
+.neg-ret {color: #f87171 !important;}
+.cash-value {color: #facc15 !important;}
 
 /* BUTTONS */
 .stButton > button {
     background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
     color: #0a0e27 !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    padding: 14px 28px !important;
-    border-radius: 10px !important;
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    padding: 16px 32px !important;
+    border-radius: 12px !important;
 }
 
 /* INPUTS */
 .stTextInput input, .stNumberInput input {
-    font-size: 18px !important;
-    padding: 14px 18px !important;
-    font-weight: 600 !important;
+    font-size: 20px !important;
+    padding: 16px 20px !important;
+    font-weight: 700 !important;
+    background: rgba(10, 14, 39, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
 }
 
-.stSelectbox {
+.stSelectbox div[data-baseweb="select"] {
+    font-size: 20px !important;
+}
+
+/* TABS */
+.stTabs [data-baseweb="tab-list"] {gap: 10px; background: transparent;}
+.stTabs [data-baseweb="tab"] {
+    background: rgba(20, 24, 50, 0.6) !important;
+    border-radius: 12px !important;
+    padding: 16px 26px !important;
+    color: #94a3b8 !important;
+    font-weight: 800 !important;
     font-size: 18px !important;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%) !important;
+    color: #2dd4bf !important;
+    border-color: rgba(45, 212, 191, 0.3) !important;
 }
 
 /* REST OF STYLES */
 #MainMenu, footer, header {visibility: hidden;}
-h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc !important;}
-.brand {display: flex; align-items: center; gap: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 600; color: #2dd4bf; margin-bottom: 1rem;}
-.brand-icon {width: 40px; height: 40px; background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px;}
-.hero-title {font-family: 'Space Grotesk', sans-serif; font-size: 3rem !important; font-weight: 700; line-height: 1.05; margin-bottom: 1rem; color: #f8fafc;}
+h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc !important; font-size: 2.2rem !important;}
+.brand {display: flex; align-items: center; gap: 14px; font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; font-weight: 700; color: #2dd4bf; margin-bottom: 1rem;}
+.brand-icon {width: 44px; height: 44px; background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;}
+.hero-title {font-family: 'Space Grotesk', sans-serif; font-size: 3.5rem !important; font-weight: 800; line-height: 1.05; margin-bottom: 1rem; color: #f8fafc;}
 .hero-accent {background: linear-gradient(90deg, #2dd4bf 0%, #4ade80 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;}
-.hero-sub {color: #94a3b8; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;}
-.cat-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; max-width: 580px;}
-.cat-card {background: rgba(20, 24, 50, 0.6); border-radius: 12px; padding: 14px 10px; text-align: center; border-top: 3px solid;}
-.cat-icon {font-size: 22px; margin-bottom: 6px; display: block;}
-.cat-name {font-size: 13px; color: #cbd5e1; font-weight: 600;}
-.stat-box {background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(20, 24, 50, 0.8) 100%); border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 14px; padding: 24px;}
-.stat-box-cash {background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border: 1px solid rgba(250, 204, 21, 0.3);}
-.pos-ret {color: #4ade80 !important;}
-.neg-ret {color: #f87171 !important;}
-.cash-value {color: #facc15 !important;}
-.stTabs [data-baseweb="tab-list"] {gap: 8px; background: transparent;}
-.stTabs [data-baseweb="tab"] {background: rgba(20, 24, 50, 0.6) !important; border-radius: 10px !important; padding: 14px 22px !important; color: #94a3b8 !important; font-weight: 700; font-size: 16px !important; border: 1px solid rgba(148, 163, 184, 0.1);}
-.stTabs [aria-selected="true"] {background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%) !important; color: #2dd4bf !important; border-color: rgba(45, 212, 191, 0.3) !important;}
-.group-header {background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 14px; padding: 20px 26px; margin-bottom: 20px;}
-.group-title {font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; font-weight: 700; color: #f8fafc; margin: 0;}
-.group-sub {color: #94a3b8; font-size: 1rem; margin-top: 4px;}
-.rules-box {background: rgba(250, 204, 21, 0.08); border-left: 3px solid #facc15; border-radius: 8px; padding: 16px 20px; color: #fef3c7; font-size: 16px; font-weight: 600; margin: 12px 0;}
-.alert-box-red {background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; border-radius: 8px; padding: 16px 20px; color: #fecaca; font-size: 16px; font-weight: 600; margin: 12px 0;}
-.form-title {font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin-bottom: 6px;}
-.form-sub {color: #94a3b8; font-size: 1rem; margin-bottom: 1.4rem;}
-.cash-badge {background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;}
-.cash-badge-label {color: #fde68a; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;}
-.cash-badge-value {font-family: 'Space Grotesk', sans-serif; color: #facc15; font-size: 1.5rem; font-weight: 900;}
-.footer-text {color: #64748b; font-size: 14px; text-align: center; margin-top: 2rem;}
+.hero-sub {color: #94a3b8; font-size: 1.2rem; line-height: 1.6; margin-bottom: 1.5rem;}
+.cat-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 14px; max-width: 600px;}
+.cat-card {background: rgba(20, 24, 50, 0.6); border-radius: 12px; padding: 16px 12px; text-align: center; border-top: 3px solid;}
+.cat-icon {font-size: 26px; margin-bottom: 8px; display: block;}
+.cat-name {font-size: 15px; color: #cbd5e1; font-weight: 700;}
+.group-header {background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 14px; padding: 22px 28px; margin-bottom: 20px;}
+.group-title {font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 800; color: #f8fafc; margin: 0;}
+.group-sub {color: #94a3b8; font-size: 1.1rem; margin-top: 6px;}
+.rules-box {background: rgba(250, 204, 21, 0.08); border-left: 4px solid #facc15; border-radius: 10px; padding: 18px 24px; color: #fef3c7; font-size: 18px; font-weight: 700; margin: 14px 0;}
+.alert-box-red {background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 10px; padding: 18px 24px; color: #fecaca; font-size: 18px; font-weight: 700; margin: 14px 0;}
+.form-title {font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;}
+.form-sub {color: #94a3b8; font-size: 1.1rem; margin-bottom: 1.6rem;}
+.cash-badge {background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 12px; padding: 20px 26px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;}
+.cash-badge-label {color: #fde68a; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;}
+.cash-badge-value {font-family: 'Space Grotesk', sans-serif; color: #facc15; font-size: 1.8rem; font-weight: 900;}
+.footer-text {color: #64748b; font-size: 15px; text-align: center; margin-top: 2rem;}
 </style>
 """, unsafe_allow_html=True)
-
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "group_info" not in st.session_state:
