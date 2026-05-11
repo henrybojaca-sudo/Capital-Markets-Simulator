@@ -27,6 +27,6 @@ TRADEABLE_ASSETS = {
     "USDCOP=X":       {"name": "USD/COP",                "sector": "Divisas",     "yahoo_symbol": "USDCOP=X"},
 }
 
-BENCHMARK_TICKER = "^COLCAP"  # Yahoo Finance symbol para COLCAP
+BENCHMARK_TICKER = "^COLCAP"
 BENCHMARK_NAME = "COLCAP"
 INITIAL_CAPITAL = 100_000_000  # 100 millones COP
