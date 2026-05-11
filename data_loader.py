@@ -1,6 +1,5 @@
 """
 Data Loader - Yahoo Finance integration
-Fetches real-time prices for BVC stocks using correct Yahoo Finance symbols
 """
 
 import yfinance as yf
@@ -10,32 +9,12 @@ from typing import Dict, Optional
 
 @st.cache_data(ttl=300)
 def get_latest_prices(tickers: list) -> Dict[str, Dict[str, Optional[float]]]:
-    """
-    Fetch latest prices from Yahoo Finance.
-    
-    Args:
-        tickers: List of internal ticker symbols (e.g., ["ECOPETROL.CL", "CIBEST.CL"])
-    
-    Returns:
-        Dict with structure:
-        {
-            "ECOPETROL.CL": {"price": 2620.0, "date": "2025-05-10"},
-            "CIBEST.CL": {"price": 74000.0, "date": "2025-05-10"},
-            ...
-        }
-    """
-    from tickers import TRADEABLE_ASSETS
-    
+    """Fetch latest prices from Yahoo Finance."""
     prices = {}
     
     for ticker in tickers:
         try:
-            # Get the Yahoo Finance symbol from TRADEABLE_ASSETS config
-            asset_info = TRADEABLE_ASSETS.get(ticker, {})
-            yahoo_symbol = asset_info.get("yahoo_symbol", ticker)
-            
-            # Fetch price data from Yahoo Finance
-            yf_ticker = yf.Ticker(yahoo_symbol)
+            yf_ticker = yf.Ticker(ticker)
             hist = yf_ticker.history(period="5d")
             
             if not hist.empty:
@@ -46,30 +25,17 @@ def get_latest_prices(tickers: list) -> Dict[str, Dict[str, Optional[float]]]:
                     "date": last_date
                 }
             else:
-                # No data available
-                prices[ticker] = {
-                    "price": None,
-                    "date": None
-                }
+                prices[ticker] = {"price": None, "date": None}
                 
         except Exception as e:
-            # Error fetching data
-            print(f"Error fetching price for {ticker} (yahoo: {yahoo_symbol}): {e}")
-            prices[ticker] = {
-                "price": None,
-                "date": None
-            }
+            print(f"Error fetching {ticker}: {e}")
+            prices[ticker] = {"price": None, "date": None}
     
     return prices
 
 
 def get_benchmark_price() -> Optional[float]:
-    """
-    Fetch COLCAP index price.
-    
-    Returns:
-        Current COLCAP value or None if unavailable
-    """
+    """Fetch COLCAP index price."""
     from tickers import BENCHMARK_TICKER
     
     try:
