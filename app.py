@@ -1,6 +1,6 @@
 """
 Capital Markets Simulator - Main App
-Versión mejorada con mejor legibilidad visual
+Versión con validaciones robustas y mejor legibilidad visual
 """
 
 import streamlit as st
@@ -181,6 +181,7 @@ h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc 
 .footer-text {color: #64748b; font-size: 15px; text-align: center; margin-top: 2rem;}
 </style>
 """, unsafe_allow_html=True)
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "group_info" not in st.session_state:
@@ -275,277 +276,328 @@ if not st.session_state.authenticated:
 # =============================================================
 # AUTHENTICATED
 # =============================================================
-group = st.session_state.group_info
-group_num = group["group_number"]
+try:
+    group = st.session_state.group_info
+    group_num = group["group_number"]
 
-c1, c2 = st.columns([5, 1])
-with c1:
-    st.markdown(f"""
-    <div class="group-header">
-        <div class="group-title">📈 Grupo {group_num} — {group['nickname']}</div>
-        <div class="group-sub">Capitán: {group['captain']}</div>
-    </div>
-    """, unsafe_allow_html=True)
-with c2:
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
-    if st.button("Cerrar Sesión", key="logout"):
-        st.session_state.authenticated = False
-        st.session_state.group_info = None
-        st.rerun()
-
-with st.spinner("Cargando precios del mercado..."):
-    _invalidate_cache()
-    tickers_list = list(TRADEABLE_ASSETS.keys())
-    prices = get_latest_prices(tickers_list)
-    portfolio = get_portfolio(group_num)
-
-invested_value = calculate_invested_value(portfolio, prices)
-cash = get_cash(group_num)
-total_value = invested_value + cash
-total_return = calculate_return(total_value, INITIAL_CAPITAL)
-
-s1, s2, s3, s4, s5 = st.columns(5)
-with s1:
-    st.markdown(f"""
-    <div class="stat-box">
-        <div class="stat-label">Capital Inicial</div>
-        <div class="stat-value">${INITIAL_CAPITAL/1e6:.0f}M</div>
-    </div>
-    """, unsafe_allow_html=True)
-with s2:
-    st.markdown(f"""
-    <div class="stat-box">
-        <div class="stat-label">Invertido</div>
-        <div class="stat-value">${invested_value/1e6:.2f}M</div>
-    </div>
-    """, unsafe_allow_html=True)
-with s3:
-    st.markdown(f"""
-    <div class="stat-box stat-box-cash">
-        <div class="stat-label" style="color:#fde68a;">💵 Efectivo</div>
-        <div class="stat-value cash-value">${cash/1e6:.2f}M</div>
-    </div>
-    """, unsafe_allow_html=True)
-with s4:
-    st.markdown(f"""
-    <div class="stat-box">
-        <div class="stat-label">Valor Total</div>
-        <div class="stat-value">${total_value/1e6:.2f}M</div>
-    </div>
-    """, unsafe_allow_html=True)
-with s5:
-    ret_class = "pos-ret" if total_return >= 0 else "neg-ret"
-    sign = "+" if total_return >= 0 else ""
-    st.markdown(f"""
-    <div class="stat-box">
-        <div class="stat-label">Return</div>
-        <div class="stat-value {ret_class}">{sign}{total_return:.2f}%</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
-
-if cash > 1000 and any(q > 0 for q in portfolio.values()):
-    st.markdown(f"""
-    <div class="rules-box">
-        ⚠️ Tienes <b>${cash:,.0f}</b> en efectivo sin invertir. Al cierre del día debes estar 100% invertido.
-    </div>
-    """, unsafe_allow_html=True)
-
-tab_port, tab_trade, tab_hist = st.tabs(["📊 Mi Portafolio", "💱 Operar", "📜 Historial"])
-
-# ========== PORTFOLIO ==========
-with tab_port:
-    if not any(q > 0 for q in portfolio.values()):
-        st.markdown("""
-        <div class="rules-box">
-            💡 Aún no tienes posiciones. Ve a <b>Operar</b> para hacer tu primera inversión.
+    c1, c2 = st.columns([5, 1])
+    with c1:
+        st.markdown(f"""
+        <div class="group-header">
+            <div class="group-title">📈 Grupo {group_num} — {group['nickname']}</div>
+            <div class="group-sub">Capitán: {group['captain']}</div>
         </div>
         """, unsafe_allow_html=True)
-    else:
-        comp_df = portfolio_composition(portfolio, prices)
+    with c2:
+        st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+        if st.button("Cerrar Sesión", key="logout"):
+            st.session_state.authenticated = False
+            st.session_state.group_info = None
+            st.rerun()
+
+    with st.spinner("Cargando precios del mercado..."):
+        _invalidate_cache()
+        tickers_list = list(TRADEABLE_ASSETS.keys())
+        prices = get_latest_prices(tickers_list)
+        portfolio = get_portfolio(group_num)
+
+    # VALIDAR QUE PRICES SEA UN DICCIONARIO VÁLIDO
+    if not isinstance(prices, dict):
+        st.error("Error al obtener precios del mercado. Recarga la página.")
+        st.stop()
+
+    # VALIDAR QUE PORTFOLIO SEA UN DICCIONARIO VÁLIDO
+    if not isinstance(portfolio, dict):
+        portfolio = {}
+
+    invested_value = calculate_invested_value(portfolio, prices)
+    cash = get_cash(group_num)
+    
+    # VALIDAR QUE CASH SEA UN NÚMERO VÁLIDO
+    if not isinstance(cash, (int, float)) or cash < 0:
+        cash = 0
         
-        if comp_df.empty:
-            st.warning("⚠️ No se pudieron obtener precios para tus posiciones. Intenta recargar la página.")
-        else:
-            st.dataframe(
-                comp_df,
-                use_container_width=True,
-                hide_index=True,
-                height=400,
-            )
-            import plotly.express as px
-            fig = px.pie(            comp_df, values="Valor (COP)", names="Ticker",
-            hole=0.6,
-            color_discrete_sequence=["#2dd4bf", "#0ea5e9", "#a855f7", "#f59e0b",
-                                      "#ef4444", "#10b981", "#06b6d4", "#ec4899"],
-        )
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="#cbd5e1",
-            font_family="Inter",
-            font_size=14,
-            height=420,
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    total_value = invested_value + cash
+    total_return = calculate_return(total_value, INITIAL_CAPITAL)
 
-# ========== TRADE ==========
-with tab_trade:
-    st.markdown(f"""
-    <div class="cash-badge">
-        <div>
-            <div class="cash-badge-label">💵 Efectivo Disponible</div>
-            <div style="color:#94a3b8; font-size:12px;">Solo puedes comprar hasta este monto</div>
+    s1, s2, s3, s4, s5 = st.columns(5)
+    with s1:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-label">Capital Inicial</div>
+            <div class="stat-value">${INITIAL_CAPITAL/1e6:.0f}M</div>
         </div>
-        <div class="cash-badge-value">${cash:,.0f} COP</div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    with s2:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-label">Invertido</div>
+            <div class="stat-value">${invested_value/1e6:.2f}M</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with s3:
+        st.markdown(f"""
+        <div class="stat-box stat-box-cash">
+            <div class="stat-label" style="color:#fde68a;">💵 Efectivo</div>
+            <div class="stat-value cash-value">${cash/1e6:.2f}M</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with s4:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-label">Valor Total</div>
+            <div class="stat-value">${total_value/1e6:.2f}M</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with s5:
+        ret_class = "pos-ret" if total_return >= 0 else "neg-ret"
+        sign = "+" if total_return >= 0 else ""
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-label">Return</div>
+            <div class="stat-value {ret_class}">{sign}{total_return:.2f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="rules-box">
-        ⚠️ Regla: debes mantener el 100% invertido al cierre del día.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
-    col_buy, col_sell = st.columns(2)
+    if cash > 1000 and any(q > 0 for q in portfolio.values()):
+        st.markdown(f"""
+        <div class="rules-box">
+            ⚠️ Tienes <b>${cash:,.0f}</b> en efectivo sin invertir. Al cierre del día debes estar 100% invertido.
+        </div>
+        """, unsafe_allow_html=True)
 
-    # ----- BUY -----
-    with col_buy:
-        st.markdown("### 🟢 Comprar")
+    tab_port, tab_trade, tab_hist = st.tabs(["📊 Mi Portafolio", "💱 Operar", "📜 Historial"])
 
-        if cash < 100:
+    # ========== PORTFOLIO ==========
+    with tab_port:
+        if not any(q > 0 for q in portfolio.values()):
             st.markdown("""
-            <div class="alert-box-red">
-                🚫 No tienes efectivo disponible. Vende algún activo primero.
+            <div class="rules-box">
+                💡 Aún no tienes posiciones. Ve a <b>Operar</b> para hacer tu primera inversión.
             </div>
             """, unsafe_allow_html=True)
         else:
-            buy_ticker = st.selectbox(
-                "Activo a comprar",
-                options=list(TRADEABLE_ASSETS.keys()),
-                format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
-                key="buy_ticker",
-            )
-            buy_price = prices.get(buy_ticker, {}).get("price")
-
-            if buy_price:
-                st.caption(f"💰 Precio: **${buy_price:,.2f}** ({prices[buy_ticker]['date']})")
-
-                if st.session_state.get("_use_all_cash", False):
-                    default_amount = int(cash)
-                    st.session_state["_use_all_cash"] = False
-                else:
-                    default_amount = st.session_state.get("buy_amount", 0)
-                    if default_amount > int(cash):
-                        default_amount = 0
-
-                buy_amount = st.number_input(
-                    f"Monto a invertir (máx. ${cash:,.0f})",
-                    min_value=0,
-                    max_value=int(cash),
-                    value=default_amount,
-                    step=100_000,
-                    key="buy_amount"
+            comp_df = portfolio_composition(portfolio, prices)
+            
+            # VALIDAR QUE EL DATAFRAME NO ESTÉ VACÍO
+            if comp_df.empty:
+                st.warning("⚠️ No se pudieron obtener precios para tus posiciones. Intenta recargar la página (F5).")
+            else:
+                st.dataframe(
+                    comp_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=400,
                 )
+                
+                # SOLO CREAR GRÁFICO SI HAY DATOS
+                try:
+                    import plotly.express as px
+                    fig = px.pie(
+                        comp_df, values="Valor (COP)", names="Ticker",
+                        hole=0.6,
+                        color_discrete_sequence=["#2dd4bf", "#0ea5e9", "#a855f7", "#f59e0b",
+                                                  "#ef4444", "#10b981", "#06b6d4", "#ec4899"],
+                    )
+                    fig.update_layout(
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#cbd5e1",
+                        font_family="Inter",
+                        font_size=14,
+                        height=420,
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error al crear el gráfico: {str(e)}")
 
-                if st.button("💯 Usar todo", key="btn_all_cash"):
-                    st.session_state["_use_all_cash"] = True
-                    st.rerun()
+    # ========== TRADE ==========
+    with tab_trade:
+        st.markdown(f"""
+        <div class="cash-badge">
+            <div>
+                <div class="cash-badge-label">💵 Efectivo Disponible</div>
+                <div style="color:#94a3b8; font-size:12px;">Solo puedes comprar hasta este monto</div>
+            </div>
+            <div class="cash-badge-value">${cash:,.0f} COP</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-                buy_qty = buy_amount / buy_price if buy_price > 0 else 0
-                if buy_qty > 0:
-                    st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
+        st.markdown("""
+        <div class="rules-box">
+            ⚠️ Regla: debes mantener el 100% invertido al cierre del día.
+        </div>
+        """, unsafe_allow_html=True)
 
-                if st.button("Ejecutar Compra →", type="primary", key="btn_buy"):
-                    if buy_amount <= 0:
-                        st.error("Monto debe ser mayor a 0")
-                    elif buy_amount > cash + 0.01:
-                        st.error(f"Efectivo insuficiente. Disponible: ${cash:,.0f}")
+        col_buy, col_sell = st.columns(2)
+
+        # ----- BUY -----
+        with col_buy:
+            st.markdown("### 🟢 Comprar")
+
+            if cash < 100:
+                st.markdown("""
+                <div class="alert-box-red">
+                    🚫 No tienes efectivo disponible. Vende algún activo primero.
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                buy_ticker = st.selectbox(
+                    "Activo a comprar",
+                    options=list(TRADEABLE_ASSETS.keys()),
+                    format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
+                    key="buy_ticker",
+                )
+                
+                # VALIDAR QUE EL PRECIO EXISTA
+                buy_price_data = prices.get(buy_ticker, {})
+                buy_price = buy_price_data.get("price") if isinstance(buy_price_data, dict) else None
+
+                if buy_price and buy_price > 0:
+                    st.caption(f"💰 Precio: **${buy_price:,.2f}** ({buy_price_data.get('date', 'N/A')})")
+
+                    if st.session_state.get("_use_all_cash", False):
+                        default_amount = int(cash)
+                        st.session_state["_use_all_cash"] = False
                     else:
-                        _invalidate_cache()
-                        fresh_portfolio = get_portfolio(group_num)
+                        default_amount = st.session_state.get("buy_amount", 0)
+                        if default_amount > int(cash):
+                            default_amount = 0
 
-                        ok = decrease_cash(group_num, buy_amount)
-                        if ok:
-                            fresh_portfolio[buy_ticker] = fresh_portfolio.get(buy_ticker, 0) + buy_qty
-                            save_portfolio(group_num, fresh_portfolio)
-                            record_trade(group_num, {
-                                "action": "BUY", "ticker": buy_ticker,
-                                "quantity": buy_qty, "price": buy_price,
-                                "amount": buy_amount,
-                            })
-                            st.success(f"✅ Comprado: {buy_qty:,.4f} de {buy_ticker}")
-                            st.rerun()
+                    buy_amount = st.number_input(
+                        f"Monto a invertir (máx. ${cash:,.0f})",
+                        min_value=0,
+                        max_value=int(cash),
+                        value=default_amount,
+                        step=100_000,
+                        key="buy_amount"
+                    )
+
+                    if st.button("💯 Usar todo", key="btn_all_cash"):
+                        st.session_state["_use_all_cash"] = True
+                        st.rerun()
+
+                    buy_qty = buy_amount / buy_price if buy_price > 0 else 0
+                    if buy_qty > 0:
+                        st.caption(f"📦 Cantidad: **{buy_qty:,.4f}** unidades")
+
+                    if st.button("Ejecutar Compra →", type="primary", key="btn_buy"):
+                        if buy_amount <= 0:
+                            st.error("Monto debe ser mayor a 0")
+                        elif buy_amount > cash + 0.01:
+                            st.error(f"Efectivo insuficiente. Disponible: ${cash:,.0f}")
                         else:
-                            st.error("Efectivo insuficiente")
+                            try:
+                                _invalidate_cache()
+                                fresh_portfolio = get_portfolio(group_num)
 
-    # ----- SELL -----
-    with col_sell:
-        st.markdown("### 🔴 Vender")
-        held = {t: q for t, q in portfolio.items() if q > 0}
-        if not held:
-            st.info("No tienes posiciones para vender")
-        else:
-            sell_ticker = st.selectbox(
-                "Activo a vender",
-                options=list(held.keys()),
-                format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
-                key="sell_ticker",
-            )
-            sell_price = prices.get(sell_ticker, {}).get("price")
-            current_qty = portfolio.get(sell_ticker, 0)
-            current_val = current_qty * sell_price if sell_price else 0
-
-            st.caption(f"📦 En cartera: **{current_qty:,.4f}**")
-            st.caption(f"💰 Valor: **${current_val:,.0f}**")
-
-            sell_pct = st.slider("% a vender", 0, 100, 100, step=10, key="sell_pct")
-            sell_qty = current_qty * sell_pct / 100
-            sell_amount = sell_qty * sell_price if sell_price else 0
-            st.caption(f"💵 Recibirás: **${sell_amount:,.0f}**")
-
-            if st.button("Ejecutar Venta →", type="primary", key="btn_sell"):
-                if sell_pct <= 0:
-                    st.error("Selecciona % mayor a 0")
+                                ok = decrease_cash(group_num, buy_amount)
+                                if ok:
+                                    fresh_portfolio[buy_ticker] = fresh_portfolio.get(buy_ticker, 0) + buy_qty
+                                    save_portfolio(group_num, fresh_portfolio)
+                                    record_trade(group_num, {
+                                        "action": "BUY", "ticker": buy_ticker,
+                                        "quantity": buy_qty, "price": buy_price,
+                                        "amount": buy_amount,
+                                    })
+                                    st.success(f"✅ Comprado: {buy_qty:,.4f} de {buy_ticker}")
+                                    st.rerun()
+                                else:
+                                    st.error("Efectivo insuficiente")
+                            except Exception as e:
+                                st.error(f"Error al ejecutar compra: {str(e)}")
                 else:
-                    _invalidate_cache()
-                    fresh_portfolio = get_portfolio(group_num)
-                    fresh_qty = fresh_portfolio.get(sell_ticker, 0)
+                    st.warning(f"⚠️ Precio no disponible para {buy_ticker}. Intenta otro activo o recarga la página.")
 
-                    actual_sell_qty = fresh_qty * sell_pct / 100
-                    actual_sell_amount = actual_sell_qty * sell_price if sell_price else 0
+        # ----- SELL -----
+        with col_sell:
+            st.markdown("### 🔴 Vender")
+            held = {t: q for t, q in portfolio.items() if q > 0}
+            if not held:
+                st.info("No tienes posiciones para vender")
+            else:
+                sell_ticker = st.selectbox(
+                    "Activo a vender",
+                    options=list(held.keys()),
+                    format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
+                    key="sell_ticker",
+                )
+                
+                # VALIDAR QUE EL PRECIO EXISTA
+                sell_price_data = prices.get(sell_ticker, {})
+                sell_price = sell_price_data.get("price") if isinstance(sell_price_data, dict) else None
+                current_qty = portfolio.get(sell_ticker, 0)
+                current_val = current_qty * sell_price if sell_price and sell_price > 0 else 0
 
-                    fresh_portfolio[sell_ticker] = fresh_qty - actual_sell_qty
-                    if fresh_portfolio[sell_ticker] < 0.0001:
-                        fresh_portfolio[sell_ticker] = 0
-                    save_portfolio(group_num, fresh_portfolio)
-                    increase_cash(group_num, actual_sell_amount)
-                    record_trade(group_num, {
-                        "action": "SELL", "ticker": sell_ticker,
-                        "quantity": actual_sell_qty, "price": sell_price,
-                        "amount": actual_sell_amount,
-                    })
-                    st.success(f"✅ Vendido: {actual_sell_qty:,.4f} de {sell_ticker}")
-                    st.rerun()
+                st.caption(f"📦 En cartera: **{current_qty:,.4f}**")
+                
+                if sell_price and sell_price > 0:
+                    st.caption(f"💰 Valor: **${current_val:,.0f}**")
 
-# ========== HISTORY ==========
-with tab_hist:
-    trades = get_trades(group_num)
-    if not trades:
-        st.info("📭 Sin operaciones todavía")
-    else:
-        df_hist = pd.DataFrame(trades)
-        df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"])
-        df_hist = df_hist.sort_values("timestamp", ascending=False)
-        st.dataframe(
-            df_hist,
-            use_container_width=True,
-            hide_index=True,
-        )
+                    sell_pct = st.slider("% a vender", 0, 100, 100, step=10, key="sell_pct")
+                    sell_qty = current_qty * sell_pct / 100
+                    sell_amount = sell_qty * sell_price if sell_price else 0
+                    st.caption(f"💵 Recibirás: **${sell_amount:,.0f}**")
 
-st.markdown(f"""
-<div class="footer-text">
-    Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M')}
-</div>
-""", unsafe_allow_html=True)
+                    if st.button("Ejecutar Venta →", type="primary", key="btn_sell"):
+                        if sell_pct <= 0:
+                            st.error("Selecciona % mayor a 0")
+                        else:
+                            try:
+                                _invalidate_cache()
+                                fresh_portfolio = get_portfolio(group_num)
+                                fresh_qty = fresh_portfolio.get(sell_ticker, 0)
+
+                                actual_sell_qty = fresh_qty * sell_pct / 100
+                                actual_sell_amount = actual_sell_qty * sell_price if sell_price else 0
+
+                                fresh_portfolio[sell_ticker] = fresh_qty - actual_sell_qty
+                                if fresh_portfolio[sell_ticker] < 0.0001:
+                                    fresh_portfolio[sell_ticker] = 0
+                                save_portfolio(group_num, fresh_portfolio)
+                                increase_cash(group_num, actual_sell_amount)
+                                record_trade(group_num, {
+                                    "action": "SELL", "ticker": sell_ticker,
+                                    "quantity": actual_sell_qty, "price": sell_price,
+                                    "amount": actual_sell_amount,
+                                })
+                                st.success(f"✅ Vendido: {actual_sell_qty:,.4f} de {sell_ticker}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error al ejecutar venta: {str(e)}")
+                else:
+                    st.warning(f"⚠️ Precio no disponible para {sell_ticker}. Intenta recargar la página.")
+
+    # ========== HISTORY ==========
+    with tab_hist:
+        try:
+            trades = get_trades(group_num)
+            if not trades:
+                st.info("📭 Sin operaciones todavía")
+            else:
+                df_hist = pd.DataFrame(trades)
+                df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"])
+                df_hist = df_hist.sort_values("timestamp", ascending=False)
+                st.dataframe(
+                    df_hist,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+        except Exception as e:
+            st.error(f"Error al cargar historial: {str(e)}")
+
+    st.markdown(f"""
+    <div class="footer-text">
+        Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+    </div>
+    """, unsafe_allow_html=True)
+
+except Exception as e:
+    st.error(f"Error general de la aplicación: {str(e)}")
+    st.markdown("""
+    <div class="alert-box-red">
+        🚨 Hubo un error. Por favor recarga la página (F5) o cierra sesión y vuelve a entrar.
+    </div>
+    """, unsafe_allow_html=True)
