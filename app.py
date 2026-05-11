@@ -364,14 +364,18 @@ with tab_port:
         """, unsafe_allow_html=True)
     else:
         comp_df = portfolio_composition(portfolio, prices)
-        st.dataframe(
-            comp_df,
-            use_container_width=True,
-            hide_index=True,
-        )
-        import plotly.express as px
-        fig = px.pie(
-            comp_df, values="Valor (COP)", names="Ticker",
+        
+        if comp_df.empty:
+            st.warning("⚠️ No se pudieron obtener precios para tus posiciones. Intenta recargar la página.")
+        else:
+            st.dataframe(
+                comp_df,
+                use_container_width=True,
+                hide_index=True,
+                height=400,
+            )
+            import plotly.express as px
+            fig = px.pie(            comp_df, values="Valor (COP)", names="Ticker",
             hole=0.6,
             color_discrete_sequence=["#2dd4bf", "#0ea5e9", "#a855f7", "#f59e0b",
                                       "#ef4444", "#10b981", "#06b6d4", "#ec4899"],
