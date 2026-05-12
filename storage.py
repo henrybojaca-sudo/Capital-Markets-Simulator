@@ -347,3 +347,47 @@ def delete_all_data():
                 except Exception as e:
                     print(f"Error deleting row {row_idx} in {tab_name}: {e}")
     _invalidate_cache()
+    def set_game_start_date(date_str: str) -> bool:
+    """
+    Set the game start date for benchmark comparison.
+    
+    Args:
+        date_str: Date in format 'YYYY-MM-DD'
+    
+    Returns:
+        True if successful
+    """
+    try:
+        sheet = _get_sheet()
+        ws = sheet.worksheet("Groups")
+        
+        # Store in cell A1 (header) of a hidden column
+        # Use column E (after group_number, nickname, captain, password)
+        ws.update('E1', 'game_start_date', value_input_option="RAW")
+        ws.update('E2', date_str, value_input_option="RAW")
+        
+        _invalidate_cache()
+        return True
+    except Exception as e:
+        print(f"Error setting game start date: {e}")
+        return False
+
+
+def get_game_start_date() -> str:
+    """
+    Get the game start date.
+    
+    Returns:
+        Date string in format 'YYYY-MM-DD' or None if not set
+    """
+    try:
+        sheet = _get_sheet()
+        ws = sheet.worksheet("Groups")
+        
+        # Read from E2
+        value = ws.acell('E2').value
+        return value if value else None
+        
+    except Exception as e:
+        print(f"Error getting game start date: {e}")
+        return None
