@@ -4,17 +4,14 @@ Panel del Profesor con funciones de reset y borrado total
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 
 from tickers import TRADEABLE_ASSETS, BENCHMARK_TICKER, INITIAL_CAPITAL
-from data_loader import get_latest_prices
+from data_loader import get_latest_prices, get_benchmark_performance
 from storage import (
     get_all_groups, get_portfolio, get_all_trades, get_cash,
     reset_group, reset_all_groups, delete_all_data,
-    set_game_start_date, get_game_start_date,  # <-- AGREGAR ESTA LÍNEA
-)from storage import (
-    get_all_groups, get_portfolio, get_all_trades, get_cash,
-    reset_group, reset_all_groups, delete_all_data,
+    set_game_start_date, get_game_start_date,
 )
 from portfolio import (
     calculate_invested_value, portfolio_composition, calculate_return,
@@ -85,7 +82,6 @@ if st.button("Cerrar Sesión"):
 with st.spinner("Cargando datos..."):
     tickers_list = list(TRADEABLE_ASSETS.keys())
     prices = get_latest_prices(tickers_list)
-    bench_prices = get_latest_prices([BENCHMARK_TICKER])
     groups = get_all_groups()
     portfolios = {k: get_portfolio(int(k)) for k in groups.keys()}
 
@@ -94,9 +90,10 @@ total_aum = sum(
     calculate_invested_value(portfolios.get(k, {}), prices) + get_cash(int(k))
     for k in groups.keys()
 ) if groups else 0
-# Obtener métricas del benchmark
-from data_loader import get_benchmark_performance
-bench_performance = get_benchmark_performance()
+
+# Obtener fecha de inicio del juego y métricas del benchmark
+game_start = get_game_start_date()
+bench_performance = get_benchmark_performance(start_date=game_start)
 
 # Métricas superiores con validación
 c1, c2, c3, c4, c5 = st.columns(5)
@@ -125,6 +122,7 @@ else:
     c3.metric("COLCAP", "N/A")
     c4.metric("Variación Día", "N/A")
     c5.metric("Desde Inicio", "N/A")
+
 st.divider()
 
 tab_lb, tab_detail, tab_trades, tab_admin = st.tabs([
@@ -279,3 +277,37 @@ with tab_admin:
             delete_all_data()
             st.success("✅ Todos los datos eliminados. La app está lista para nuevos grupos.")
             st.rerun()
+
+    st.divider()
+
+    st.markdown("### 📅 Fecha de Inicio del Juego")
+    st.markdown("""
+    <div class="reset-warning">
+        📌 Establece la fecha en que empezó la competencia para calcular correctamente
+        la variación del COLCAP "Desde Inicio".
+    </div>
+    """, unsafe_allow_html=True)
+    
+    current_start = get_game_start_date()
+    if current_start:
+        st.info(f"📅 Fecha actual configurada: **{current_start}**")
+    else:
+        st.warning("⚠️ No hay fecha configurada. Se usará fecha por defecto (últimos 3 días).")
+    
+    col_date, col_btn_date = st.columns([2, 1])
+    with col_date:
+        new_start_date = st.date_input(
+            "Nueva fecha de inicio",
+            value=date.today() if not current_start else pd.to_datetime(current_start).date(),
+            max_value=date.today(),
+        )
+    
+    with col_btn_date:
+        st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+        if st.button("💾 Guardar Fecha", type="primary"):
+            date_str = new_start_date.strftime("%Y-%m-%d")
+            if set_game_start_date(date_str):
+                st.success(f"✅ Fecha de inicio guardada: {new_start_date.strftime('%d/%m/%Y')}")
+                st.rerun()
+            else:
+                st.error("Error al guardar la fecha")
