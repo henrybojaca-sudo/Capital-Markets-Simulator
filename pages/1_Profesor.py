@@ -11,6 +11,10 @@ from data_loader import get_latest_prices
 from storage import (
     get_all_groups, get_portfolio, get_all_trades, get_cash,
     reset_group, reset_all_groups, delete_all_data,
+    set_game_start_date, get_game_start_date,  # <-- AGREGAR ESTA LÍNEA
+)from storage import (
+    get_all_groups, get_portfolio, get_all_trades, get_cash,
+    reset_group, reset_all_groups, delete_all_data,
 )
 from portfolio import (
     calculate_invested_value, portfolio_composition, calculate_return,
