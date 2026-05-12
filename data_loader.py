@@ -111,9 +111,11 @@ def get_benchmark_performance(start_date: str = None) -> dict:
     except Exception as e:
         print(f"Error fetching benchmark performance: {e}")
         return None
-        def get_benchmark_performance_auto() -> dict:
+
+
+def get_benchmark_performance_auto() -> dict:
     """
-    Get COLCAP performance with automatic start date from first trade.
+    Get COLCAP performance with automatic start date (last 7 days).
     """
     from tickers import BENCHMARK_TICKER
     
