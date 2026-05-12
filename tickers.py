@@ -26,6 +26,6 @@ TRADEABLE_ASSETS = {
     "USDCOP=X":       {"name": "USD/COP",                "sector": "Divisas"},
 }
 
-BENCHMARK_TICKER = "^COLCAP"
+BENCHMARK_TICKER = "ICOLCAP.CL"
 BENCHMARK_NAME = "COLCAP"
 INITIAL_CAPITAL = 100_000_000  # 100 millones COP
