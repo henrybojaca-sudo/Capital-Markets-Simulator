@@ -34,69 +34,24 @@ def get_latest_prices(tickers: list) -> Dict[str, Dict[str, Optional[float]]]:
     return prices
 
 
-def get_benchmark_performance(start_date: str = None) -> dict:
-    """
-    Get COLCAP performance metrics.
-    
-    Args:
-        start_date: Optional start date in 'YYYY-MM-DD' format for total_change calculation
-    
-    Returns:
-        dict with benchmark metrics or None if error
-    """
+def get_benchmark_price() -> Optional[float]:
+    """Fetch COLCAP index price."""
     from tickers import BENCHMARK_TICKER
-    import pandas as pd
     
     try:
         yf_ticker = yf.Ticker(BENCHMARK_TICKER)
+        hist = yf_ticker.history(period="1d")
         
-        # Determine period based on start_date
-        if start_date:
-            # Get data from start_date to now
-            hist = yf_ticker.history(start=start_date)
-        else:
-            # Default: last 5 days
-            hist = yf_ticker.history(period="5d")
-        
-        if hist.empty or len(hist) < 2:
-            return None
-        
-        # Current price (most recent)
-        current_price = float(hist["Close"].iloc[-1])
-        current_date = hist.index[-1].strftime("%d/%m/%Y")
-        
-        # Previous close (day before)
-        previous_close = float(hist["Close"].iloc[-2])
-        day_change = ((current_price - previous_close) / previous_close) * 100
-        
-        # Start price and total change
-        if start_date and len(hist) > 2:
-            # Use first available price after start_date
-            start_price = float(hist["Close"].iloc[0])
-            start_date_formatted = hist.index[0].strftime("%d/%m/%Y")
-            total_change = ((current_price - start_price) / start_price) * 100
-        else:
-            # Fallback: use 2 days ago
-            start_idx = -3 if len(hist) >= 3 else -2
-            start_price = float(hist["Close"].iloc[start_idx])
-            start_date_formatted = hist.index[start_idx].strftime("%d/%m/%Y")
-            total_change = ((current_price - start_price) / start_price) * 100
-        
-        return {
-            'current': current_price,
-            'current_date': current_date,
-            'previous_close': previous_close,
-            'day_change': day_change,
-            'start_date': start_date_formatted,
-            'start_price': start_price,
-            'total_change': total_change,
-        }
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+        return None
         
     except Exception as e:
-        print(f"Error fetching benchmark performance: {e}")
-        return None        print(f"Error fetching benchmark performance: {e}")
+        print(f"Error fetching benchmark: {e}")
         return None
-        def get_benchmark_performance(start_date: str = None) -> dict:
+
+
+def get_benchmark_performance(start_date: str = None) -> dict:
     """
     Get COLCAP performance metrics.
     
