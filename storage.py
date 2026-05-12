@@ -352,18 +352,20 @@ def delete_all_data():
 def set_game_start_date(date_str: str) -> bool:
     """
     Set the game start date for benchmark comparison.
-    
-    Args:
-        date_str: Date in format 'YYYY-MM-DD'
-    
-    Returns:
-        True if successful
+    Stores in Cash tab column C.
     """
     try:
         sheet = _get_sheet()
-        ws = sheet.worksheet("Groups")
-        ws.update('E1', 'game_start_date', value_input_option="RAW")
-        ws.update('E2', date_str, value_input_option="RAW")
+        ws = sheet.worksheet("Cash")
+        
+        # Check if header exists in C1
+        header = ws.acell('C1').value
+        if header != 'game_start_date':
+            ws.update('C1', 'game_start_date', value_input_option="RAW")
+        
+        # Store date in C2
+        ws.update('C2', date_str, value_input_option="RAW")
+        
         _invalidate_cache()
         return True
     except Exception as e:
@@ -373,15 +375,19 @@ def set_game_start_date(date_str: str) -> bool:
 
 def get_game_start_date() -> str:
     """
-    Get the game start date.
-    
-    Returns:
-        Date string in format 'YYYY-MM-DD' or None if not set
+    Get the game start date from Cash tab column C.
     """
     try:
         sheet = _get_sheet()
-        ws = sheet.worksheet("Groups")
-        value = ws.acell('E2').value
+        ws = sheet.worksheet("Cash")
+        
+        # Read from C2
+        value = ws.acell('C2').value
+        
+        # If it's a datetime string, extract just the date part
+        if value and 'T' in str(value):
+            value = str(value).split('T')[0]
+            
         return value if value else None
     except Exception as e:
         print(f"Error getting game start date: {e}")
