@@ -90,13 +90,37 @@ total_aum = sum(
     calculate_invested_value(portfolios.get(k, {}), prices) + get_cash(int(k))
     for k in groups.keys()
 ) if groups else 0
-bench_price = bench_prices.get(BENCHMARK_TICKER, {}).get('price')
+# Obtener métricas del benchmark
+from data_loader import get_benchmark_performance
+bench_performance = get_benchmark_performance()
 
-c1, c2, c3 = st.columns(3)
+# Métricas superiores con validación
+c1, c2, c3, c4, c5 = st.columns(5)
+
 c1.metric("Grupos Registrados", total_groups)
 c2.metric("AUM Total", f"${total_aum/1e6:.1f}M")
-c3.metric("COLCAP", f"${bench_price:,.2f}" if bench_price else "N/A")
 
+if bench_performance:
+    c3.metric(
+        "COLCAP", 
+        f"{bench_performance['current']:,.2f}",
+        delta=f"{bench_performance['day_change']:+.2f}%",
+        delta_color="normal"
+    )
+    c4.metric(
+        "Variación Día",
+        f"{bench_performance['day_change']:+.2f}%",
+        delta_color="off"
+    )
+    c5.metric(
+        "Desde Inicio",
+        f"{bench_performance['total_change']:+.2f}%",
+        help=f"Desde {bench_performance['start_date']}"
+    )
+else:
+    c3.metric("COLCAP", "N/A")
+    c4.metric("Variación Día", "N/A")
+    c5.metric("Desde Inicio", "N/A")
 st.divider()
 
 tab_lb, tab_detail, tab_trades, tab_admin = st.tabs([
