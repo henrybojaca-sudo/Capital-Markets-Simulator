@@ -111,3 +111,42 @@ def get_benchmark_performance(start_date: str = None) -> dict:
     except Exception as e:
         print(f"Error fetching benchmark performance: {e}")
         return None
+        def get_benchmark_performance_auto() -> dict:
+    """
+    Get COLCAP performance with automatic start date from first trade.
+    """
+    from tickers import BENCHMARK_TICKER
+    
+    try:
+        yf_ticker = yf.Ticker(BENCHMARK_TICKER)
+        
+        # Get last 7 days of data
+        hist = yf_ticker.history(period="7d")
+        
+        if hist.empty or len(hist) < 2:
+            return None
+        
+        # Current price (most recent)
+        current_price = float(hist["Close"].iloc[-1])
+        
+        # Previous close (day before)
+        previous_close = float(hist["Close"].iloc[-2])
+        day_change = ((current_price - previous_close) / previous_close) * 100
+        
+        # Start price (oldest in 7 days)
+        start_price = float(hist["Close"].iloc[0])
+        start_date = hist.index[0].strftime("%d/%m/%Y")
+        total_change = ((current_price - start_price) / start_price) * 100
+        
+        return {
+            'current': current_price,
+            'previous_close': previous_close,
+            'day_change': day_change,
+            'start_date': start_date,
+            'start_price': start_price,
+            'total_change': total_change,
+        }
+        
+    except Exception as e:
+        print(f"Error fetching benchmark performance: {e}")
+        return None
