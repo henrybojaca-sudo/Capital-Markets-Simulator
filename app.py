@@ -140,15 +140,15 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 }
 
 /* TABS */
-.stTabs [data-baseweb="tab-list"] {gap: 10px; background: transparent;}
+.stTabs [data-baseweb="tab-list"] {gap: 20px; background: transparent;}
 .stTabs [data-baseweb="tab"] {
     background: rgba(20, 24, 50, 0.6) !important;
-    border-radius: 12px !important;
-    padding: 16px 26px !important;
+    border-radius: 16px !important;
+    padding: 32px 52px !important;
     color: #94a3b8 !important;
-    font-weight: 800 !important;
-    font-size: 18px !important;
-    border: 1px solid rgba(148, 163, 184, 0.1);
+    font-weight: 900 !important;
+    font-size: 36px !important;
+    border: 2px solid rgba(148, 163, 184, 0.15);
 }
 .stTabs [aria-selected="true"] {
     background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%) !important;
