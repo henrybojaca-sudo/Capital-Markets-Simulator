@@ -118,15 +118,22 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 .stButton > button {
     background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
     color: #0a0e27 !important;
-    font-size: 20px !important;
+    font-size: 40px !important;
     font-weight: 900 !important;
     padding: 16px 32px !important;
     border-radius: 12px !important;
 }
 
 /* INPUTS */
+.stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label {
+    color: #cbd5e1 !important;
+    font-size: 28px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+}
+
 .stTextInput input, .stNumberInput input {
-    font-size: 20px !important;
+    font-size: 40px !important;
     padding: 16px 20px !important;
     font-weight: 700 !important;
     background: rgba(10, 14, 39, 0.8) !important;
@@ -136,7 +143,7 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 }
 
 .stSelectbox div[data-baseweb="select"] {
-    font-size: 20px !important;
+    font-size: 40px !important;
 }
 
 /* TABS */
@@ -171,14 +178,19 @@ h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc 
 .group-header {background: linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 14px; padding: 22px 28px; margin-bottom: 20px;}
 .group-title {font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 800; color: #f8fafc; margin: 0;}
 .group-sub {color: #94a3b8; font-size: 1.1rem; margin-top: 6px;}
-.rules-box {background: rgba(250, 204, 21, 0.08); border-left: 4px solid #facc15; border-radius: 10px; padding: 18px 24px; color: #fef3c7; font-size: 18px; font-weight: 700; margin: 14px 0;}
-.alert-box-red {background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 10px; padding: 18px 24px; color: #fecaca; font-size: 18px; font-weight: 700; margin: 14px 0;}
+.rules-box {background: rgba(250, 204, 21, 0.08); border-left: 4px solid #facc15; border-radius: 10px; padding: 18px 24px; color: #fef3c7; font-size: 28px; font-weight: 700; margin: 14px 0;}
+.alert-box-red {background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 10px; padding: 18px 24px; color: #fecaca; font-size: 28px; font-weight: 700; margin: 14px 0;}
 .form-title {font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;}
 .form-sub {color: #94a3b8; font-size: 1.1rem; margin-bottom: 1.6rem;}
 .cash-badge {background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 12px; padding: 20px 26px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;}
-.cash-badge-label {color: #fde68a; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;}
-.cash-badge-value {font-family: 'Space Grotesk', sans-serif; color: #facc15; font-size: 1.8rem; font-weight: 900;}
+.cash-badge-label {color: #fde68a; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;}
+.cash-badge-value {font-family: 'Space Grotesk', sans-serif; color: #facc15; font-size: 2.5rem; font-weight: 900;}
 .footer-text {color: #64748b; font-size: 15px; text-align: center; margin-top: 2rem;}
+
+/* Caption text */
+.stCaptionContainer, [data-testid="stCaptionContainer"], .caption {
+    font-size: 24px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -419,7 +431,7 @@ try:
         <div class="cash-badge">
             <div>
                 <div class="cash-badge-label">💵 Efectivo Disponible</div>
-                <div style="color:#94a3b8; font-size:12px;">Solo puedes comprar hasta este monto</div>
+                <div style="color:#94a3b8; font-size:20px;">Solo puedes comprar hasta este monto</div>
             </div>
             <div class="cash-badge-value">${cash:,.0f} COP</div>
         </div>
