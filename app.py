@@ -158,7 +158,7 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 
 /* REST OF STYLES */
 #MainMenu, footer, header {visibility: hidden;}
-h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc !important; font-size: 2.2rem !important;}
+h1, h2, h3 {font-family: 'Space Grotesk', sans-serif !important; color: #f8fafc !important; font-size: 4.4rem !important;}
 .brand {display: flex; align-items: center; gap: 14px; font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; font-weight: 700; color: #2dd4bf; margin-bottom: 1rem;}
 .brand-icon {width: 44px; height: 44px; background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;}
 .hero-title {font-family: 'Space Grotesk', sans-serif; font-size: 3.5rem !important; font-weight: 800; line-height: 1.05; margin-bottom: 1rem; color: #f8fafc;}
