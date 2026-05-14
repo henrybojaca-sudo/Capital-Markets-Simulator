@@ -40,7 +40,7 @@ div[data-testid="stDataFrame"],
 div[data-testid="stDataFrame"] div,
 .stDataFrame,
 .dataframe {
-    font-size: 28px !important;
+    font-size: 56px !important;
 }
 
 div[data-testid="stDataFrame"] table,
@@ -49,7 +49,7 @@ div[data-testid="stDataFrame"] div table,
 table.dataframe {
     background: rgba(15, 23, 42, 0.9) !important;
     border-radius: 14px !important;
-    font-size: 28px !important;
+    font-size: 56px !important;
 }
 
 div[data-testid="stDataFrame"] thead th,
@@ -58,7 +58,7 @@ div[data-testid="stDataFrame"] table thead th,
 table.dataframe thead th {
     background: rgba(30, 41, 59, 0.95) !important;
     color: #cbd5e1 !important;
-    font-size: 20px !important;
+    font-size: 40px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.1em !important;
@@ -71,7 +71,7 @@ div[data-testid="stDataFrame"] table tbody td,
 .stDataFrame tbody td,
 table.dataframe tbody td {
     padding: 32px 32px !important;
-    font-size: 32px !important;
+    font-size: 64px !important;
     font-weight: 800 !important;
     color: #ffffff !important;
     border-bottom: 2px solid rgba(148, 163, 184, 0.2) !important;
