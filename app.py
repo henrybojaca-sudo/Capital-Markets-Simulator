@@ -58,7 +58,7 @@ div[data-testid="stDataFrame"] table thead th,
 table.dataframe thead th {
     background: rgba(30, 41, 59, 0.95) !important;
     color: #cbd5e1 !important;
-    font-size: 40px !important;
+    font-size: 16px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.1em !important;
@@ -118,7 +118,7 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 .stButton > button {
     background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%) !important;
     color: #0a0e27 !important;
-    font-size: 40px !important;
+    font-size: 16px !important;
     font-weight: 900 !important;
     padding: 16px 32px !important;
     border-radius: 12px !important;
@@ -133,7 +133,7 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 }
 
 .stTextInput input, .stNumberInput input {
-    font-size: 40px !important;
+    font-size: 16px !important;
     padding: 16px 20px !important;
     font-weight: 700 !important;
     background: rgba(10, 14, 39, 0.8) !important;
@@ -143,7 +143,7 @@ div[data-testid="stDataFrame"] tbody tr:hover td,
 }
 
 .stSelectbox div[data-baseweb="select"] {
-    font-size: 40px !important;
+    font-size: 16px !important;
 }
 
 /* TABS */
