@@ -333,44 +333,50 @@ try:
     total_return = calculate_return(total_value, INITIAL_CAPITAL)
 
     s1, s2, s3, s4, s5 = st.columns(5)
+       VAL_STYLE  = "font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:900;color:#f8fafc;"
+    LBL_STYLE  = "font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;"
+    BOX_STYLE  = "background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(20,24,50,0.8));border:1px solid rgba(148,163,184,0.15);border-radius:14px;padding:26px;"
+    CASH_STYLE = "background:linear-gradient(135deg,rgba(250,204,21,0.15),rgba(245,158,11,0.08));border:1px solid rgba(250,204,21,0.3);border-radius:14px;padding:26px;"
+
+    ret_color = "#4ade80" if total_return >= 0 else "#f87171"
+    sign = "+" if total_return >= 0 else ""
+
+    s1, s2, s3, s4, s5 = st.columns(5)
     with s1:
         st.markdown(f"""
-        <div class="stat-box">
-            <div class="stat-label">Capital Inicial</div>
-            <div class="stat-value">${INITIAL_CAPITAL/1e6:.0f}M</div>
+        <div style="{BOX_STYLE}">
+            <div style="{LBL_STYLE}">Capital Inicial</div>
+            <div style="{VAL_STYLE}">${INITIAL_CAPITAL/1e6:.0f}M</div>
         </div>
         """, unsafe_allow_html=True)
     with s2:
         st.markdown(f"""
-        <div class="stat-box">
-            <div class="stat-label">Invertido</div>
-            <div class="stat-value">${invested_value/1e6:.2f}M</div>
+        <div style="{BOX_STYLE}">
+            <div style="{LBL_STYLE}">Invertido</div>
+            <div style="{VAL_STYLE}">${invested_value/1e6:.2f}M</div>
         </div>
         """, unsafe_allow_html=True)
     with s3:
         st.markdown(f"""
-        <div class="stat-box stat-box-cash">
-            <div class="stat-label" style="color:#fde68a;">💵 Efectivo</div>
-            <div class="stat-value cash-value">${cash/1e6:.2f}M</div>
+        <div style="{CASH_STYLE}">
+            <div style="{LBL_STYLE};color:#fde68a;">💵 Efectivo</div>
+            <div style="{VAL_STYLE};color:#facc15;">${cash/1e6:.2f}M</div>
         </div>
         """, unsafe_allow_html=True)
     with s4:
         st.markdown(f"""
-        <div class="stat-box">
-            <div class="stat-label">Valor Total</div>
-            <div class="stat-value">${total_value/1e6:.2f}M</div>
+        <div style="{BOX_STYLE}">
+            <div style="{LBL_STYLE}">Valor Total</div>
+            <div style="{VAL_STYLE}">${total_value/1e6:.2f}M</div>
         </div>
         """, unsafe_allow_html=True)
     with s5:
-        ret_class = "pos-ret" if total_return >= 0 else "neg-ret"
-        sign = "+" if total_return >= 0 else ""
         st.markdown(f"""
-        <div class="stat-box">
-            <div class="stat-label">Return</div>
-            <div class="stat-value {ret_class}">{sign}{total_return:.2f}%</div>
+        <div style="{BOX_STYLE}">
+            <div style="{LBL_STYLE}">Return</div>
+            <div style="{VAL_STYLE};color:{ret_color};">{sign}{total_return:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
-
     st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
     if cash > 1000 and any(q > 0 for q in portfolio.values()):
