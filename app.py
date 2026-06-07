@@ -329,7 +329,7 @@ try:
     if not isinstance(cash, (int, float)) or cash < 0:
         cash = 0
         
-       total_value = invested_value + cash
+    total_value = invested_value + cash
     total_return = calculate_return(total_value, INITIAL_CAPITAL)
 
     VAL_STYLE  = "font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:900;color:#f8fafc;"
@@ -378,6 +378,7 @@ try:
         """, unsafe_allow_html=True)
 
     st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
     if cash > 1000 and any(q > 0 for q in portfolio.values()):
         st.markdown(f"""
         <div class="rules-box">
