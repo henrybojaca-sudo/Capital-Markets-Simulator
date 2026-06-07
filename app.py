@@ -329,11 +329,10 @@ try:
     if not isinstance(cash, (int, float)) or cash < 0:
         cash = 0
         
-    total_value = invested_value + cash
+       total_value = invested_value + cash
     total_return = calculate_return(total_value, INITIAL_CAPITAL)
 
-    s1, s2, s3, s4, s5 = st.columns(5)
-       VAL_STYLE  = "font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:900;color:#f8fafc;"
+    VAL_STYLE  = "font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:900;color:#f8fafc;"
     LBL_STYLE  = "font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;"
     BOX_STYLE  = "background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(20,24,50,0.8));border:1px solid rgba(148,163,184,0.15);border-radius:14px;padding:26px;"
     CASH_STYLE = "background:linear-gradient(135deg,rgba(250,204,21,0.15),rgba(245,158,11,0.08));border:1px solid rgba(250,204,21,0.3);border-radius:14px;padding:26px;"
@@ -377,8 +376,8 @@ try:
             <div style="{VAL_STYLE};color:{ret_color};">{sign}{total_return:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
     if cash > 1000 and any(q > 0 for q in portfolio.values()):
         st.markdown(f"""
         <div class="rules-box">
