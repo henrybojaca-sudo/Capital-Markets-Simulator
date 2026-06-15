@@ -1,8 +1,10 @@
 """
 Storage module - Google Sheets backend con caching agresivo
+
 Guarda números como strings con punto decimal para evitar problemas de locale
 """
 
+import time
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
@@ -21,11 +23,10 @@ TAB_PORTFOLIOS = "Portfolios"
 TAB_CASH = "Cash"
 TAB_TRADES = "Trades"
 
-CACHE_TTL = 30
+CACHE_TTL = 300  # 5 minutos (antes: 30 segundos)
 
 
 def safe_float(value, default=0.0):
-    """Convierte cualquier valor a float de forma segura."""
     if value is None or value == "":
         return float(default)
     if isinstance(value, (int, float)):
@@ -63,6 +64,18 @@ def safe_float(value, default=0.0):
         return float(default)
 
 
+def _safe_read(func):
+    """Reintenta hasta 4 veces con backoff exponencial ante errores 429."""
+    for intento in range(4):
+        try:
+            return func()
+        except Exception as e:
+            if '429' in str(e) and intento < 3:
+                time.sleep(2 ** intento)
+            else:
+                raise
+
+
 @st.cache_resource(ttl=3600)
 def _get_gsheet_client():
     creds = Credentials.from_service_account_info(
@@ -79,28 +92,29 @@ def _get_sheet():
     return client.open(sheet_name)
 
 
+@st.cache_resource(ttl=3600)
 def _get_tab(tab_name: str):
     return _get_sheet().worksheet(tab_name)
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _read_groups_records():
-    return _get_tab(TAB_GROUPS).get_all_records()
+    return _safe_read(lambda: _get_tab(TAB_GROUPS).get_all_records())
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _read_portfolios_records():
-    return _get_tab(TAB_PORTFOLIOS).get_all_records()
+    return _safe_read(lambda: _get_tab(TAB_PORTFOLIOS).get_all_records())
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _read_cash_records():
-    return _get_tab(TAB_CASH).get_all_records()
+    return _safe_read(lambda: _get_tab(TAB_CASH).get_all_records())
 
 
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _read_trades_records():
-    return _get_tab(TAB_TRADES).get_all_records()
+    return _safe_read(lambda: _get_tab(TAB_TRADES).get_all_records())
 
 
 def _invalidate_cache():
@@ -350,22 +364,13 @@ def delete_all_data():
 
 
 def set_game_start_date(date_str: str) -> bool:
-    """
-    Set the game start date for benchmark comparison.
-    Stores in Cash tab column C.
-    """
     try:
         sheet = _get_sheet()
         ws = sheet.worksheet("Cash")
-        
-        # Check if header exists in C1
         header = ws.acell('C1').value
         if header != 'game_start_date':
             ws.update('C1', 'game_start_date', value_input_option="RAW")
-        
-        # Store date in C2
         ws.update('C2', date_str, value_input_option="RAW")
-        
         _invalidate_cache()
         return True
     except Exception as e:
@@ -374,20 +379,12 @@ def set_game_start_date(date_str: str) -> bool:
 
 
 def get_game_start_date() -> str:
-    """
-    Get the game start date from Cash tab column C.
-    """
     try:
         sheet = _get_sheet()
         ws = sheet.worksheet("Cash")
-        
-        # Read from C2
         value = ws.acell('C2').value
-        
-        # If it's a datetime string, extract just the date part
         if value and 'T' in str(value):
             value = str(value).split('T')[0]
-            
         return value if value else None
     except Exception as e:
         print(f"Error getting game start date: {e}")
