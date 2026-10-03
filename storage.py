@@ -13,6 +13,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import re
+import pandas as pd
 
 INITIAL_CAPITAL = 100_000_000
 
@@ -157,6 +158,29 @@ def _read_cash_records():
 @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def _read_trades_records():
     return _safe_read(lambda: _get_tab(TAB_TRADES).get_all_records())
+
+
+TAB_SNAPSHOTS = "Snapshots"
+
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def get_snapshots() -> pd.DataFrame:
+    """Fotos diarias del cierre (las escribe scheduler.py). Vacío si aún no hay."""
+    cols = ["date", "group_number", "invested", "cash", "total_value", "return_pct", "cash_pct"]
+    try:
+        records = _safe_read(lambda: _get_tab(TAB_SNAPSHOTS).get_all_records())
+    except Exception:
+        return pd.DataFrame(columns=cols)
+    df = pd.DataFrame(records)
+    if df.empty or "date" not in df.columns:
+        return pd.DataFrame(columns=cols)
+    df = df[df["date"].astype(str).str.strip() != ""].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["group_number"] = df["group_number"].astype(str).str.strip()
+    for c in cols[2:]:
+        if c in df.columns:
+            df[c] = df[c].map(safe_float)
+    return df.dropna(subset=["date"]).sort_values(["group_number", "date"])
 
 
 def _invalidate_cache():

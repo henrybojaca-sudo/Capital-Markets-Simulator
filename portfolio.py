@@ -141,3 +141,71 @@ def portfolio_history(trades: list, closes: pd.DataFrame, start_date: str,
             value += qty * float(px)
         rows.append({"Fecha": d, "Valor": value, "Return (%)": calculate_return(value, initial)})
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------
+# Métricas de riesgo (panel del profesor)
+# ---------------------------------------------------------------
+TRADING_DAYS = 252
+_MIN_STD = 1e-6  # por debajo, la variación es ruido de redondeo y las razones se disparan
+
+
+def value_series_from_snapshots(snaps: pd.DataFrame, group_key: str) -> pd.Series:
+    """Serie diaria de valor total de un grupo a partir de las fotos del cierre."""
+    if snaps is None or snaps.empty:
+        return pd.Series(dtype=float)
+    g = snaps[snaps["group_number"] == str(group_key)]
+    if g.empty:
+        return pd.Series(dtype=float)
+    s = g.groupby(g["date"].dt.normalize())["total_value"].last().sort_index()
+    return s[s > 0]
+
+
+def risk_metrics(values: pd.Series, bench: pd.Series, rf_annual: float = 0.0,
+                 initial: float = INITIAL_CAPITAL) -> dict:
+    """Métricas de riesgo/retorno a partir del valor diario del portafolio.
+
+    values: valor total por fecha (cierre). bench: precio del benchmark por fecha.
+    rf_annual: tasa libre de riesgo efectiva anual (ej. 0.09 = 9%).
+    Con pocos días las métricas anualizadas son poco estables: es normal.
+    """
+    nan = float("nan")
+    out = {"Días": 0, "Return (%)": nan, "Volatilidad anual (%)": nan, "Sharpe": nan,
+           "Beta": nan, "Alpha anual (%)": nan, "Max drawdown (%)": nan,
+           "Tracking error (%)": nan, "Information ratio": nan}
+    if values is None or len(values) == 0:
+        return out
+    values = values.sort_index().astype(float)
+    out["Días"] = int(len(values))
+    out["Return (%)"] = (values.iloc[-1] / initial - 1) * 100
+
+    curve = pd.concat([pd.Series([initial]), values.reset_index(drop=True)])
+    out["Max drawdown (%)"] = float(((curve / curve.cummax()) - 1).min() * 100)
+
+    # El capital inicial se ubica en la sesión anterior al primer cierre,
+    # para que el primer día también cuente como rendimiento diario.
+    if bench is not None and len(bench) > 0:
+        prev = bench.index[bench.index < values.index[0]]
+        if len(prev):
+            values = pd.concat([pd.Series([float(initial)], index=[prev[-1]]), values])
+
+    rp = values.pct_change().dropna()
+    rf_d = (1 + rf_annual) ** (1 / TRADING_DAYS) - 1
+    if len(rp) >= 2 and rp.std(ddof=1) > _MIN_STD:
+        sd = rp.std(ddof=1)
+        out["Volatilidad anual (%)"] = sd * TRADING_DAYS ** 0.5 * 100
+        out["Sharpe"] = (rp.mean() - rf_d) / sd * TRADING_DAYS ** 0.5
+
+    if bench is not None and len(bench) > 1:
+        rb = bench.sort_index().astype(float).pct_change()
+        df = pd.concat([rp.rename("p"), rb.rename("b")], axis=1, join="inner").dropna()
+        if len(df) >= 2 and df["b"].std(ddof=1) > _MIN_STD:
+            beta = df["p"].cov(df["b"]) / df["b"].var(ddof=1)
+            out["Beta"] = beta
+            out["Alpha anual (%)"] = ((df["p"].mean() - rf_d) - beta * (df["b"].mean() - rf_d)) * TRADING_DAYS * 100
+            active = df["p"] - df["b"]
+            te = active.std(ddof=1)
+            if te > _MIN_STD:
+                out["Tracking error (%)"] = te * TRADING_DAYS ** 0.5 * 100
+                out["Information ratio"] = active.mean() / te * TRADING_DAYS ** 0.5
+    return out

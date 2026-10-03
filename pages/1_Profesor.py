@@ -12,13 +12,14 @@ from data_loader import get_latest_prices, get_benchmark_performance, get_price_
 from storage import (
     get_all_groups, get_portfolio, get_all_trades, get_cash,
     reset_group, reset_all_groups, delete_all_data,
-    set_game_start_date, get_game_start_date,
+    set_game_start_date, get_game_start_date, get_snapshots,
 )
 from portfolio import (
     calculate_invested_value, portfolio_composition, calculate_return,
-    get_leaderboard, portfolio_history,
+    get_leaderboard, portfolio_history, risk_metrics, value_series_from_snapshots,
 )
 import charts
+from export import build_excel
 
 st.set_page_config(
     page_title="Profesor",
@@ -138,8 +139,58 @@ else:
 
 st.divider()
 
-tab_lb, tab_detail, tab_trades, tab_admin = st.tabs([
-    "🏆 Leaderboard", "📁 Detalle Grupos", "📜 Operaciones", "⚙️ Administración"
+# ---- Datos compartidos: operaciones, historial diario y fotos del cierre ----
+all_trades = get_all_trades()
+histories, closes, hist_start = {}, pd.DataFrame(), None
+try:
+    if all_trades and any(all_trades.values()):
+        first_trade = min(t["timestamp"] for ts in all_trades.values() for t in ts)[:10]
+        hist_start = game_start or first_trade
+        tickers_hist = tuple(sorted(
+            {t["ticker"] for ts in all_trades.values() for t in ts} | {BENCHMARK_TICKER}
+        ))
+        closes = get_price_history(tickers_hist, hist_start)
+        for key in groups:
+            histories[key] = portfolio_history(all_trades.get(key, []), closes, hist_start)
+except Exception as e:
+    print(f"Error construyendo historiales: {e}")
+snapshots = get_snapshots()
+
+
+def _group_label(key):
+    g = groups[key]
+    return f"G{g['group_number']} {g['nickname']}"[:24]
+
+
+def compute_risk_table(rf_pct: float) -> pd.DataFrame:
+    bench_closes = (
+        closes[BENCHMARK_TICKER].dropna()
+        if not closes.empty and BENCHMARK_TICKER in closes.columns else pd.Series(dtype=float)
+    )
+    risk_rows = []
+    for key, g in sorted(groups.items(), key=lambda x: int(x[0])):
+        snap_vals = value_series_from_snapshots(snapshots, key)
+        if len(snap_vals) >= 2:
+            values, fuente = snap_vals, "Fotos del cierre"
+        else:
+            h = histories.get(key)
+            values = h.set_index("Fecha")["Valor"] if h is not None and not h.empty else pd.Series(dtype=float)
+            fuente = "Reconstruido"
+        m = risk_metrics(values, bench_closes, rf_pct / 100)
+        if not snapshots.empty:
+            gs = snapshots[snapshots["group_number"] == str(key)]
+            m["Días con >1% efectivo"] = int((gs["cash_pct"] > 1).sum()) if not gs.empty else None
+        risk_rows.append({"Grupo": f"Grupo {g['group_number']}", "Nickname": g["nickname"], **m, "Fuente": fuente})
+    risk_df = pd.DataFrame(risk_rows)
+    if not risk_df.empty:
+        risk_df = risk_df.sort_values("Return (%)", ascending=False, na_position="last").reset_index(drop=True)
+    return risk_df
+
+
+risk_df = compute_risk_table(float(st.session_state.get("rf_pct", 9.0)))
+
+tab_lb, tab_risk, tab_detail, tab_trades, tab_admin = st.tabs([
+    "🏆 Leaderboard", "📐 Métricas de riesgo", "📁 Detalle Grupos", "📜 Operaciones", "⚙️ Administración"
 ])
 
 with tab_lb:
@@ -174,35 +225,90 @@ with tab_lb:
         st.plotly_chart(charts.returns_by_group(lb, bench_ret), width="stretch")
 
         # Carrera de grupos (evolución diaria reconstruida con las operaciones)
+        if histories:
+            named = {_group_label(k): h for k, h in histories.items()}
+            top3 = [
+                _group_label(k)
+                for k in lb["Grupo"].str.replace("Grupo ", "", regex=False).head(3)
+                if str(k) in groups
+            ]
+            highlighted = st.multiselect(
+                "Grupos a resaltar en la carrera (máx. 8)", list(named.keys()),
+                default=top3, max_selections=8,
+            )
+            any_hist = next((h for h in named.values() if not h.empty), None)
+            if any_hist is not None and len(any_hist) >= 2:
+                bench = charts.benchmark_return_series(closes, BENCHMARK_TICKER, any_hist["Fecha"].iloc[0])
+                st.plotly_chart(charts.race_chart(named, bench, highlighted), width="stretch")
+                st.caption("Valores aproximados al cierre de cada día, reconstruidos con las operaciones.")
+
+        # Exportar todo a Excel
+        st.divider()
         try:
-            all_trades_lb = get_all_trades()
-            if all_trades_lb:
-                first_trade = min(t["timestamp"] for ts in all_trades_lb.values() for t in ts)[:10]
-                start_date = game_start or first_trade
-                tickers_hist = tuple(sorted(
-                    {t["ticker"] for ts in all_trades_lb.values() for t in ts} | {BENCHMARK_TICKER}
-                ))
-                closes = get_price_history(tickers_hist, start_date)
-                histories = {}
-                for key, g in groups.items():
-                    name = f"G{g['group_number']} {g['nickname']}"[:24]
-                    histories[name] = portfolio_history(all_trades_lb.get(key, []), closes, start_date)
-                names = list(histories.keys())
-                top3 = [
-                    f"G{groups[str(k)]['group_number']} {groups[str(k)]['nickname']}"[:24]
-                    for k in lb["Grupo"].str.replace("Grupo ", "").head(3)
-                    if str(k) in groups
-                ]
-                highlighted = st.multiselect(
-                    "Grupos a resaltar en la carrera (máx. 8)", names, default=top3, max_selections=8,
-                )
-                any_hist = next((h for h in histories.values() if not h.empty), None)
-                if any_hist is not None and len(any_hist) >= 2:
-                    bench = charts.benchmark_return_series(closes, BENCHMARK_TICKER, any_hist["Fecha"].iloc[0])
-                    st.plotly_chart(charts.race_chart(histories, bench, highlighted), width="stretch")
-                    st.caption("Valores aproximados al cierre de cada día, reconstruidos con las operaciones.")
+            positions_rows = []
+            for key, g in sorted(groups.items(), key=lambda x: int(x[0])):
+                comp = portfolio_composition(portfolios.get(key, {}), prices)
+                for r in comp.to_dict("records"):
+                    positions_rows.append({"Grupo": f"Grupo {g['group_number']}", "Nickname": g["nickname"], **r})
+            trades_rows = []
+            for gk, ts in all_trades.items():
+                nick = groups.get(gk, {}).get("nickname", "?")
+                for t in ts:
+                    trades_rows.append({
+                        "Grupo": f"Grupo {gk}", "Nickname": nick,
+                        "Fecha": str(t.get("timestamp", ""))[:19].replace("T", " "),
+                        "Operación": t["action"], "Ticker": t["ticker"],
+                        "Cantidad": t["quantity"], "Precio": t["price"], "Monto": t["amount"],
+                    })
+            excel_bytes = build_excel(
+                leaderboard=lb.reset_index(),
+                metrics=risk_df,
+                positions=pd.DataFrame(positions_rows),
+                trades=pd.DataFrame(trades_rows),
+                snapshots=snapshots,
+                groups=groups,
+            )
+            st.download_button(
+                "📥 Descargar todo en Excel",
+                data=excel_bytes,
+                file_name=f"capital_markets_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary",
+            )
+            st.caption("Incluye leaderboard, métricas de riesgo, posiciones, operaciones y fotos diarias del cierre.")
         except Exception as e:
-            st.caption(f"No se pudo construir la carrera de grupos: {e}")
+            st.error(f"No se pudo generar el Excel: {e}")
+
+with tab_risk:
+    st.subheader("📐 Métricas de riesgo por grupo")
+    st.caption(
+        "Solo visible para el profesor. Úsalas para la retroalimentación al final de la competencia. "
+        "Con pocos días de datos, las cifras anualizadas son poco estables."
+    )
+    rf_pct = st.number_input(
+        "Tasa libre de riesgo (% efectivo anual)", min_value=0.0, max_value=50.0,
+        value=9.0, step=0.25, key="rf_pct",
+        help="Se usa para el Sharpe y el alpha. Ej.: tasa de TES corto plazo o IBR.",
+    )
+    if risk_df.empty:
+        st.info("Aún no hay grupos registrados")
+    else:
+        fmt = {
+            "Return (%)": "{:+.2f}%", "Volatilidad anual (%)": "{:.2f}%", "Sharpe": "{:.2f}",
+            "Beta": "{:.2f}", "Alpha anual (%)": "{:+.2f}%", "Max drawdown (%)": "{:.2f}%",
+            "Tracking error (%)": "{:.2f}%", "Information ratio": "{:.2f}",
+        }
+        st.dataframe(risk_df.style.format(fmt, na_rep="—"), width="stretch", hide_index=True)
+        with st.expander("¿Cómo se calcula cada métrica?"):
+            st.markdown(f"""
+- **Volatilidad anual:** desviación estándar de los rendimientos diarios × √252.
+- **Sharpe:** (rendimiento diario promedio − tasa libre de riesgo diaria) ÷ desviación estándar × √252. Tasa usada: {rf_pct:.2f}% EA.
+- **Beta:** covarianza con el COLCAP (ETF ICOLCAP) ÷ varianza del COLCAP.
+- **Alpha anual (Jensen):** exceso de rendimiento sobre lo que explica la beta, anualizado.
+- **Max drawdown:** mayor caída desde un máximo, contando desde el capital inicial.
+- **Tracking error / Information ratio:** volatilidad del rendimiento activo frente al COLCAP y rendimiento activo por unidad de ese riesgo.
+- **Fuente:** "Fotos del cierre" usa los valores guardados cada noche; "Reconstruido" los calcula con las operaciones y los precios de cierre.
+""")
 
 with tab_detail:
     if not groups:
@@ -235,7 +341,6 @@ with tab_detail:
                     )
 
 with tab_trades:
-    all_trades = get_all_trades()
     if not all_trades:
         st.info("Sin operaciones")
     else:

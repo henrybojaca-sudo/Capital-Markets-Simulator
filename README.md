@@ -15,7 +15,9 @@ Aplicación de Streamlit donde grupos de estudiantes compiten invirtiendo 100 mi
 - **Leaderboard** (solo visible para el profesor) con alerta de grupos con efectivo sin invertir
 - **Gráficos**: peso por activo y por sector, evolución del portafolio vs COLCAP, return por grupo y carrera de grupos
 - **Seguridad**: contraseñas de grupos cifradas (PBKDF2), límite de intentos de inicio de sesión, textos de usuario escapados
-- **Reporte automático** por email cada noche a las 11:30 PM
+- **Reporte automático** por email cada noche hábil a las 11:30 PM, que además guarda una **foto del cierre** de cada grupo (pestaña `Snapshots`)
+- **Métricas de riesgo** solo para el profesor: volatilidad, Sharpe, beta, alpha, max drawdown, tracking error e information ratio
+- **Exportar a Excel** desde el panel del profesor (leaderboard, métricas, posiciones, operaciones y fotos diarias)
 - **Historial completo** de operaciones por grupo
 
 ## 🏗️ Arquitectura
@@ -28,6 +30,7 @@ tickers.py                      ← Lista de activos tradeables
 data_loader.py                  ← Fetch de precios (yfinance)
 portfolio.py                    ← Cálculos de valor, métricas e historial diario
 charts.py                       ← Gráficos Plotly (paleta apta para daltonismo)
+export.py                       ← Exportación a Excel del panel del profesor
 storage.py                      ← Persistencia en Google Sheets
 scheduler.py                    ← Reporte diario por email (GitHub Actions)
 .github/workflows/
@@ -100,7 +103,7 @@ El workflow se ejecuta automáticamente o puedes dispararlo manualmente desde **
 ### Profesor
 1. Enlace **👨‍🏫 Acceso profesor** al pie de la pantalla de inicio
 2. Ingresa contraseña admin
-3. Ve leaderboard, detalle por grupo, historial, y envía reportes manuales
+3. Ve leaderboard, métricas de riesgo, detalle por grupo y operaciones; descarga todo en Excel
 
 ## 📋 Reglas del juego
 

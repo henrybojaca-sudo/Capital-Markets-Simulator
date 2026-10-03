@@ -12,9 +12,13 @@ Variables de entorno (GitHub → Settings → Secrets and variables → Actions)
     PROFESSOR_EMAIL      Correo que recibe el reporte
     SMTP_SERVER / SMTP_PORT  (opcionales, por defecto Gmail)
 
+Cada día hábil también guarda una "foto" del cierre de cada grupo en la
+pestaña Snapshots de la hoja (se crea sola). Esa foto se guarda aunque el
+correo no esté configurado o falle.
+
 Ejecutar manualmente:
-    python scheduler.py            # envía el correo
-    python scheduler.py --dry-run  # solo genera reporte.html
+    python scheduler.py            # guarda la foto y envía el correo
+    python scheduler.py --dry-run  # solo genera reporte.html (no escribe nada)
 """
 
 import html
@@ -80,7 +84,36 @@ def load_from_sheets():
         key = str(r.get("group_number", "")).strip()
         if key:
             cash[key] = _num(r.get("cash"), INITIAL_CAPITAL)
-    return groups, portfolios, cash
+    return sheet, groups, portfolios, cash
+
+
+SNAPSHOT_TAB = "Snapshots"
+SNAPSHOT_HEADER = ["date", "group_number", "invested", "cash", "total_value", "return_pct", "cash_pct"]
+
+
+def save_snapshot(sheet, rows, date_str):
+    """Guarda el cierre del día por grupo. Si ya existe ese día, lo reemplaza."""
+    try:
+        ws = sheet.worksheet(SNAPSHOT_TAB)
+    except Exception:
+        ws = sheet.add_worksheet(title=SNAPSHOT_TAB, rows=2000, cols=len(SNAPSHOT_HEADER))
+        ws.update(values=[SNAPSHOT_HEADER], range_name="A1")
+
+    all_rows = ws.get_all_values()
+    old_data = all_rows[1:] if all_rows else []
+    kept = [r for r in old_data if r and str(r[0]).strip() != date_str]
+    new_rows = [[
+        date_str, str(r["group_number"]),
+        round(r["invested"], 2), round(r["cash"], 2), round(r["total"], 2),
+        round(r["ret"], 6), round(r["cash"] / r["total"] * 100, 6) if r["total"] > 0 else 0,
+    ] for r in rows]
+    data = kept + new_rows
+    width = len(SNAPSHOT_HEADER)
+    data = [list(r) + [""] * (width - len(r)) for r in data]
+    data += [[""] * width] * max(0, len(old_data) - len(data))
+    if data:
+        ws.update(values=data, range_name="A2", value_input_option="RAW")
+    print(f"📸 Foto del {date_str} guardada para {len(new_rows)} grupos")
 
 
 def get_prices(tickers):
@@ -200,7 +233,7 @@ def send_email_smtp(to_email, subject, html_body):
 def main():
     dry_run = "--dry-run" in sys.argv
     print("🚀 Iniciando reporte diario...")
-    groups, portfolios, cash = load_from_sheets()
+    sheet, groups, portfolios, cash = load_from_sheets()
     if not groups:
         print("⚠️ Sin grupos registrados.")
         return
@@ -208,20 +241,27 @@ def main():
     tickers = list(TRADEABLE_ASSETS.keys()) + [BENCHMARK_TICKER]
     prices = get_prices(tickers)
     print(f"✅ Precios cargados: {len(prices)}/{len(tickers)}")
+    rows = build_rows(groups, portfolios, cash, prices)
+    body = build_html(rows, prices)
 
-    body = build_html(build_rows(groups, portfolios, cash, prices), prices)
     if dry_run:
         with open("reporte.html", "w", encoding="utf-8") as f:
             f.write(body)
-        print("📝 Reporte guardado en reporte.html (no se envió correo)")
+        print("📝 Reporte guardado en reporte.html (no se escribió ni envió nada)")
         return
 
-    to_email = os.environ.get("PROFESSOR_EMAIL")
-    if not to_email:
-        print("❌ Variable PROFESSOR_EMAIL no definida.")
-        sys.exit(1)
+    now = datetime.now(COLOMBIA)
+    if now.weekday() < 5:  # lunes a viernes
+        save_snapshot(sheet, rows, now.strftime("%Y-%m-%d"))
+    else:
+        print("📅 Fin de semana: no se guarda foto del cierre")
 
-    subject = f"📊 Reporte Diario — Capital Markets Simulator — {datetime.now(COLOMBIA).strftime('%d/%m/%Y')}"
+    to_email = os.environ.get("PROFESSOR_EMAIL")
+    if not (to_email and os.environ.get("SENDER_EMAIL") and os.environ.get("SENDER_PASSWORD")):
+        print("⚠️ Correo no configurado (PROFESSOR_EMAIL / SENDER_EMAIL / SENDER_PASSWORD): no se envía.")
+        return
+
+    subject = f"📊 Reporte Diario — Capital Markets Simulator — {now.strftime('%d/%m/%Y')}"
     send_email_smtp(to_email, subject, body)
     print(f"✅ Email enviado a {to_email}")
 

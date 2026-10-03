@@ -2,7 +2,7 @@ name: Daily Portfolio Report
 
 on:
   schedule:
-    - cron: "30 4 * * *"   # 11:30 PM hora Colombia (4:30 AM UTC)
+    - cron: "30 4 * * 2-6"   # 11:30 PM hora Colombia, lunes a viernes (4:30 AM UTC del día siguiente)
   workflow_dispatch: {}     # permite ejecutarlo a mano desde la pestaña Actions
 
 permissions:
