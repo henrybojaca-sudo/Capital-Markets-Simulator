@@ -283,6 +283,11 @@ if not st.session_state.authenticated:
                         st.error(f"El grupo {r_num} ya existe")
 
     st.markdown('<div class="footer-text">20 acciones BVC · USD/COP · Benchmark COLCAP · 100M COP capital inicial</div>', unsafe_allow_html=True)
+
+    # Acceso al panel del profesor (la barra lateral está oculta en esta página)
+    _l, _c, _r = st.columns([2, 1, 2])
+    with _c:
+        st.page_link("pages/1_Profesor.py", label="Acceso profesor", icon="👨‍🏫")
     st.stop()
 
 # =============================================================
