@@ -282,7 +282,7 @@ if not st.session_state.authenticated:
                     else:
                         st.error(f"El grupo {r_num} ya existe")
 
-    st.markdown('<div class="footer-text">20 acciones BVC · USD/COP · Benchmark COLCAP · 100M COP capital inicial</div>', unsafe_allow_html=True)
+    st.markdown('<div class="footer-text">29 acciones BVC · USD/COP · Benchmark COLCAP · 100M COP capital inicial</div>', unsafe_allow_html=True)
 
     # Acceso al panel del profesor (la barra lateral está oculta en esta página)
     _l, _c, _r = st.columns([2, 1, 2])
@@ -467,12 +467,21 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                buy_ticker = st.selectbox(
-                    "Activo a comprar",
-                    options=list(TRADEABLE_ASSETS.keys()),
-                    format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
-                    key="buy_ticker",
-                )
+                # Solo se ofrecen activos con precio disponible: comprar uno sin
+                # precio haría que la posición se valore en 0.
+                buyable = [
+                    t for t in TRADEABLE_ASSETS
+                    if isinstance(prices.get(t), dict) and (prices[t].get("price") or 0) > 0
+                ]
+                if buyable:
+                    buy_ticker = st.selectbox(
+                        "Activo a comprar",
+                        options=buyable,
+                        format_func=lambda t: f"{t} — {TRADEABLE_ASSETS[t]['name']}",
+                        key="buy_ticker",
+                    )
+                else:
+                    buy_ticker = None
                 
                 # VALIDAR QUE EL PRECIO EXISTA
                 buy_price_data = prices.get(buy_ticker, {})
@@ -532,7 +541,10 @@ try:
                             except Exception as e:
                                 st.error(f"Error al ejecutar compra: {str(e)}")
                 else:
-                    st.warning(f"⚠️ Precio no disponible para {buy_ticker}. Intenta otro activo o recarga la página.")
+                    if buy_ticker is None:
+                        st.warning("⚠️ No hay precios disponibles en este momento. Intenta de nuevo en unos minutos.")
+                    else:
+                        st.warning(f"⚠️ Precio no disponible para {buy_ticker}. Intenta otro activo o recarga la página.")
 
         # ----- SELL -----
         with col_sell:

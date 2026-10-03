@@ -9,7 +9,7 @@ Aplicación de Streamlit donde grupos de estudiantes compiten invirtiendo 100 mi
 ## ⚙️ Características
 
 - **Registro de grupos** con nickname, capitán y contraseña
-- **Trading diario** de 20 acciones BVC + USD/COP
+- **Trading diario** de 29 acciones BVC + USD/COP
 - **Precios en tiempo real** vía Yahoo Finance
 - **Benchmark COLCAP** (ICOLCAP.CL ETF) para comparar rendimiento
 - **Leaderboard** (solo visible para el profesor)
@@ -103,7 +103,7 @@ El workflow se ejecuta automáticamente o puedes dispararlo manualmente desde **
 
 - **Capital inicial:** 100,000,000 COP
 - **Duración:** 5 días (lunes a viernes)
-- **Activos:** 20 acciones BVC + USD/COP
+- **Activos:** 29 acciones BVC + USD/COP
 - **Regla de oro:** Siempre 100% invertido al cierre del día
 - **Rebalanceo:** Mínimo 1 movimiento por día
 - **Ganador:** Mayor **Total Return %** al final del período

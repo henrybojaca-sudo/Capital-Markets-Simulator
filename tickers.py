@@ -23,6 +23,16 @@ TRADEABLE_ASSETS = {
     "NUTRESA.CL":     {"name": "Nutresa",                "sector": "Consumo"},
     "TERPEL.CL":      {"name": "Terpel",                 "sector": "Energía"},
     "PROMIGAS.CL":    {"name": "Promigas",               "sector": "Utilities"},
+    # Agregados oct-2026 (solo se ofrecen para compra si Yahoo Finance devuelve precio)
+    "PFDAVIGRP.CL":   {"name": "PF Grupo Davivienda",    "sector": "Financiero"},
+    "BOGOTA.CL":      {"name": "Banco de Bogotá",        "sector": "Financiero"},
+    "GRUPOAVAL.CL":   {"name": "Grupo Aval",             "sector": "Financiero"},
+    "GRUBOLIVAR.CL":  {"name": "Grupo Bolívar",          "sector": "Holding"},
+    "EXITO.CL":       {"name": "Almacenes Éxito",        "sector": "Consumo"},
+    "CONCONCRET.CL":  {"name": "Conconcreto",            "sector": "Construcción"},
+    "PEI.CL":         {"name": "PEI (inmobiliario)",     "sector": "Inmobiliario"},
+    "TIN.CL":         {"name": "TIN",                    "sector": "Otros"},
+    "BHI.CL":         {"name": "BHI",                    "sector": "Otros"},
     "USDCOP=X":       {"name": "USD/COP",                "sector": "Divisas"},
 }
 
