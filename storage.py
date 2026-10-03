@@ -463,6 +463,7 @@ def delete_all_data():
         tab = _get_tab(tab_name)
         _safe_read(lambda: tab.batch_clear(["A2:Z"]))
     _invalidate_cache()
+    get_game_start_date.clear()
 
 
 def set_game_start_date(date_str: str) -> bool:
@@ -471,15 +472,17 @@ def set_game_start_date(date_str: str) -> bool:
         ws = sheet.worksheet("Cash")
         header = ws.acell('C1').value
         if header != 'game_start_date':
-            ws.update('C1', 'game_start_date', value_input_option="RAW")
-        ws.update('C2', date_str, value_input_option="RAW")
+            ws.update(values=[["game_start_date"]], range_name="C1", value_input_option="RAW")
+        ws.update(values=[[date_str]], range_name="C2", value_input_option="RAW")
         _invalidate_cache()
+        get_game_start_date.clear()
         return True
     except Exception as e:
         print(f"Error setting game start date: {e}")
         return False
 
 
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
 def get_game_start_date() -> str:
     try:
         sheet = _get_sheet()

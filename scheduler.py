@@ -60,7 +60,13 @@ def load_from_sheets():
     import gspread
     from google.oauth2.service_account import Credentials
 
-    info = json.loads(os.environ["GCP_SERVICE_ACCOUNT"])
+    try:
+        info = json.loads(os.environ["GCP_SERVICE_ACCOUNT"])
+    except json.JSONDecodeError as e:
+        raise SystemExit(
+            "❌ El secreto GCP_SERVICE_ACCOUNT no es un JSON válido. Pega el contenido completo "
+            f"del archivo .json de la cuenta de servicio (empieza con {{ y termina con }}). Detalle: {e}"
+        )
     creds = Credentials.from_service_account_info(info, scopes=[
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
@@ -233,6 +239,10 @@ def send_email_smtp(to_email, subject, html_body):
 def main():
     dry_run = "--dry-run" in sys.argv
     print("🚀 Iniciando reporte diario...")
+    if not os.environ.get("GCP_SERVICE_ACCOUNT"):
+        print("⚠️ Falta el secreto GCP_SERVICE_ACCOUNT en GitHub (Settings → Secrets and variables → "
+              "Actions). No se guarda foto ni se envía correo hasta configurarlo.")
+        return
     sheet, groups, portfolios, cash = load_from_sheets()
     if not groups:
         print("⚠️ Sin grupos registrados.")
