@@ -62,7 +62,7 @@ git push -u origin main
 En Streamlit Cloud → **Settings → Secrets**, pega:
 
 ```toml
-admin_password = "tu_contraseña_admin"   # OBLIGATORIA: sin ella el panel del profesor no abre
+admin_password = "tu_contraseña_admin"   # opcional: si no se define, la clave es profesor2026
 professor_email = "henry.bojaca@gmail.com"
 
 [email]

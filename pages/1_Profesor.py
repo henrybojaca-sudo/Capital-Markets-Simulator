@@ -65,16 +65,12 @@ if "admin_authenticated" not in st.session_state:
 if not st.session_state.admin_authenticated:
     st.title("👨‍🏫 Panel del Profesor")
     st.markdown("### 🔒 Acceso Restringido")
+    # Clave del panel: la de Secrets (admin_password) si existe; si no, la de siempre.
     try:
         admin_pw = str(st.secrets.get("admin_password", "") or "")
     except Exception:  # no existe ningún archivo de secretos
         admin_pw = ""
-    if not admin_pw:
-        st.error(
-            "No hay contraseña de administrador configurada. En Streamlit Cloud ve a "
-            "**Settings → Secrets** y agrega la línea `admin_password = \"tu_clave\"`."
-        )
-        st.stop()
+    admin_pw = admin_pw or "profesor2026"
     pw = st.text_input("Contraseña de administrador", type="password")
     if st.button("Entrar"):
         if hmac.compare_digest(pw.encode(), admin_pw.encode()):
