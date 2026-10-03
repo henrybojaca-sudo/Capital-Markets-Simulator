@@ -2,12 +2,13 @@
 Panel del Profesor con funciones de reset y borrado total
 """
 
+import hmac
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 
 from tickers import TRADEABLE_ASSETS, BENCHMARK_TICKER, INITIAL_CAPITAL
-from data_loader import get_latest_prices, get_benchmark_performance
+from data_loader import get_latest_prices, get_benchmark_performance, get_price_history
 from storage import (
     get_all_groups, get_portfolio, get_all_trades, get_cash,
     reset_group, reset_all_groups, delete_all_data,
@@ -15,8 +16,9 @@ from storage import (
 )
 from portfolio import (
     calculate_invested_value, portfolio_composition, calculate_return,
-    get_leaderboard,
+    get_leaderboard, portfolio_history,
 )
+import charts
 
 st.set_page_config(
     page_title="Profesor",
@@ -62,13 +64,24 @@ if "admin_authenticated" not in st.session_state:
 if not st.session_state.admin_authenticated:
     st.title("👨‍🏫 Panel del Profesor")
     st.markdown("### 🔒 Acceso Restringido")
+    try:
+        admin_pw = str(st.secrets.get("admin_password", "") or "")
+    except Exception:  # no existe ningún archivo de secretos
+        admin_pw = ""
+    if not admin_pw:
+        st.error(
+            "No hay contraseña de administrador configurada. En Streamlit Cloud ve a "
+            "**Settings → Secrets** y agrega la línea `admin_password = \"tu_clave\"`."
+        )
+        st.stop()
     pw = st.text_input("Contraseña de administrador", type="password")
     if st.button("Entrar"):
-        admin_pw = st.secrets.get("admin_password", "profesor2026")
-        if pw == admin_pw:
+        if hmac.compare_digest(pw.encode(), admin_pw.encode()):
             st.session_state.admin_authenticated = True
             st.rerun()
         else:
+            import time
+            time.sleep(1)
             st.error("Contraseña incorrecta")
     st.stop()
 
@@ -135,15 +148,61 @@ with tab_lb:
     if lb.empty:
         st.info("Aún no hay grupos registrados")
     else:
+        CASH_LIMIT = 1.0  # % de efectivo tolerado (regla: 100% invertido)
+
+        def _cash_style(v):
+            return "color: #fab219; font-weight: 700;" if v > CASH_LIMIT else ""
+
         st.dataframe(
             lb.style.format({
                 "Invertido": "${:,.0f}",
                 "Efectivo": "${:,.0f}",
+                "% Efectivo": "{:.1f}%",
                 "Valor Total": "${:,.0f}",
                 "Return (%)": "{:+.2f}%",
-            }),
-            use_container_width=True,
+            }).map(_cash_style, subset=["% Efectivo"]),
+            width="stretch",
         )
+        over = lb[lb["% Efectivo"] > CASH_LIMIT]
+        if not over.empty:
+            st.warning(
+                f"⚠️ {len(over)} grupo(s) con más de {CASH_LIMIT:.0f}% en efectivo "
+                f"(regla: 100% invertido): " + ", ".join(over["Grupo"])
+            )
+
+        bench_ret = bench_performance["total_change"] if bench_performance else None
+        st.plotly_chart(charts.returns_by_group(lb, bench_ret), width="stretch")
+
+        # Carrera de grupos (evolución diaria reconstruida con las operaciones)
+        try:
+            all_trades_lb = get_all_trades()
+            if all_trades_lb:
+                first_trade = min(t["timestamp"] for ts in all_trades_lb.values() for t in ts)[:10]
+                start_date = game_start or first_trade
+                tickers_hist = tuple(sorted(
+                    {t["ticker"] for ts in all_trades_lb.values() for t in ts} | {BENCHMARK_TICKER}
+                ))
+                closes = get_price_history(tickers_hist, start_date)
+                histories = {}
+                for key, g in groups.items():
+                    name = f"G{g['group_number']} {g['nickname']}"[:24]
+                    histories[name] = portfolio_history(all_trades_lb.get(key, []), closes, start_date)
+                names = list(histories.keys())
+                top3 = [
+                    f"G{groups[str(k)]['group_number']} {groups[str(k)]['nickname']}"[:24]
+                    for k in lb["Grupo"].str.replace("Grupo ", "").head(3)
+                    if str(k) in groups
+                ]
+                highlighted = st.multiselect(
+                    "Grupos a resaltar en la carrera (máx. 8)", names, default=top3, max_selections=8,
+                )
+                any_hist = next((h for h in histories.values() if not h.empty), None)
+                if any_hist is not None and len(any_hist) >= 2:
+                    bench = charts.benchmark_return_series(closes, BENCHMARK_TICKER, any_hist["Fecha"].iloc[0])
+                    st.plotly_chart(charts.race_chart(histories, bench, highlighted), width="stretch")
+                    st.caption("Valores aproximados al cierre de cada día, reconstruidos con las operaciones.")
+        except Exception as e:
+            st.caption(f"No se pudo construir la carrera de grupos: {e}")
 
 with tab_detail:
     if not groups:
@@ -171,7 +230,7 @@ with tab_detail:
                             "Valor (COP)": "${:,.0f}",
                             "Peso (%)": "{:.2f}%",
                         }),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                     )
 
@@ -200,7 +259,7 @@ with tab_trades:
                 "Precio": "${:,.2f}",
                 "Monto": "${:,.0f}",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 

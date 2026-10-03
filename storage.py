@@ -4,6 +4,9 @@ Storage module - Google Sheets backend con caching agresivo
 Guarda números como strings con punto decimal para evitar problemas de locale
 """
 
+import hashlib
+import hmac
+import secrets
 import time
 import streamlit as st
 import gspread
@@ -62,6 +65,45 @@ def safe_float(value, default=0.0):
         return float(s)
     except (ValueError, TypeError):
         return float(default)
+
+
+# ---------------------------------------------------------------
+# Contraseñas: se guardan como hash PBKDF2 (nunca en texto plano)
+# ---------------------------------------------------------------
+_PBKDF2_ITER = 200_000
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", str(password).encode(), bytes.fromhex(salt), _PBKDF2_ITER)
+    return f"pbkdf2${_PBKDF2_ITER}${salt}${digest.hex()}"
+
+
+def _is_hashed(stored: str) -> bool:
+    return str(stored).startswith("pbkdf2$")
+
+
+def verify_password(password: str, stored) -> bool:
+    stored = str(stored)
+    if _is_hashed(stored):
+        try:
+            _, iters, salt, digest = stored.split("$")
+            calc = hashlib.pbkdf2_hmac("sha256", str(password).encode(), bytes.fromhex(salt), int(iters))
+            return hmac.compare_digest(calc.hex(), digest)
+        except (ValueError, TypeError):
+            return False
+    # Contraseñas antiguas en texto plano (se migran al iniciar sesión)
+    return hmac.compare_digest(stored.encode(), str(password).encode())
+
+
+def _group_public_info(r: dict) -> dict:
+    return {
+        "group_number": int(r["group_number"]),
+        "nickname": r["nickname"],
+        "captain": r["captain"],
+        "initial_capital": INITIAL_CAPITAL,
+        "created_at": r.get("created_at", ""),
+    }
 
 
 def _safe_read(func):
@@ -131,7 +173,7 @@ def register_group(group_number: int, nickname: str, captain: str, password: str
             return False
     tab = _get_tab(TAB_GROUPS)
     tab.append_row([
-        group_number, nickname, captain, str(password),
+        group_number, nickname, captain, hash_password(password),
         datetime.now().isoformat(),
     ], value_input_option="RAW")
     cash_tab = _get_tab(TAB_CASH)
@@ -143,33 +185,41 @@ def register_group(group_number: int, nickname: str, captain: str, password: str
 def authenticate(group_number: int, password: str) -> dict | None:
     rows = _read_groups_records()
     for r in rows:
-        if str(r.get("group_number")) == str(group_number) and str(r.get("password")) == str(password):
-            return {
-                "group_number": int(r["group_number"]),
-                "nickname": r["nickname"],
-                "captain": r["captain"],
-                "password": r["password"],
-                "initial_capital": INITIAL_CAPITAL,
-                "created_at": r.get("created_at", ""),
-            }
+        if str(r.get("group_number")) != str(group_number):
+            continue
+        stored = r.get("password", "")
+        if not verify_password(password, stored):
+            return None
+        if not _is_hashed(stored):
+            _upgrade_password(group_number, password)
+        return _group_public_info(r)
     return None
+
+
+def _upgrade_password(group_number: int, password: str):
+    """Reemplaza una contraseña antigua en texto plano por su hash."""
+    try:
+        tab = _get_tab(TAB_GROUPS)
+        header = tab.row_values(1)
+        pw_col = header.index("password") + 1 if "password" in header else 4
+        col = tab.col_values(1)
+        for i, val in enumerate(col):
+            if i > 0 and str(val).strip() == str(group_number):
+                tab.update_cell(i + 1, pw_col, hash_password(password))
+                _read_groups_records.clear()
+                return
+    except Exception as e:
+        print(f"No se pudo migrar la contraseña del grupo {group_number}: {e}")
 
 
 def get_all_groups() -> dict:
     rows = _read_groups_records()
     result = {}
     for r in rows:
-        key = str(r.get("group_number"))
-        if not key or key == "":
+        key = str(r.get("group_number", "")).strip()
+        if not key:
             continue
-        result[key] = {
-            "group_number": int(r["group_number"]),
-            "nickname": r["nickname"],
-            "captain": r["captain"],
-            "password": r["password"],
-            "initial_capital": INITIAL_CAPITAL,
-            "created_at": r.get("created_at", ""),
-        }
+        result[key] = _group_public_info(r)
     return result
 
 
@@ -186,26 +236,33 @@ def get_portfolio(group_number: int) -> dict:
 
 
 def save_portfolio(group_number: int, portfolio: dict):
+    """Guarda las posiciones de un grupo con una sola escritura.
+
+    Reutiliza las filas que ya tiene el grupo (sin borrar filas), de modo que
+    las filas de otros grupos nunca se mueven aunque operen al mismo tiempo.
+    """
     tab = _get_tab(TAB_PORTFOLIOS)
-    all_rows = tab.get_all_values()
-    rows_to_delete = []
-    for i, row in enumerate(all_rows):
-        if i == 0:
-            continue
-        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
-            rows_to_delete.append(i + 1)
-    for row_idx in sorted(rows_to_delete, reverse=True):
-        try:
-            tab.delete_rows(row_idx)
-        except Exception as e:
-            print(f"Error deleting row {row_idx}: {e}")
+    all_rows = _safe_read(lambda: tab.get_all_values())
+    own_rows = [
+        i + 1 for i, row in enumerate(all_rows)
+        if i > 0 and row and str(row[0]).strip() == str(group_number)
+    ]
     new_rows = [
         [group_number, ticker, f"{float(qty):.6f}"]
         for ticker, qty in portfolio.items()
         if qty > 0.0001
     ]
-    if new_rows:
-        tab.append_rows(new_rows, value_input_option="RAW")
+    updates = []
+    for idx, row_num in enumerate(own_rows):
+        # Las filas sobrantes quedan como marcador del grupo (sin ticker y en 0)
+        # para no dejar huecos: un hueco haría que append_rows escriba en medio.
+        values = new_rows[idx] if idx < len(new_rows) else [group_number, "", "0"]
+        updates.append({"range": f"A{row_num}:C{row_num}", "values": [values]})
+    if updates:
+        _safe_read(lambda: tab.batch_update(updates, value_input_option="RAW"))
+    extra = new_rows[len(own_rows):]
+    if extra:
+        _safe_read(lambda: tab.append_rows(extra, value_input_option="RAW"))
     _invalidate_cache()
 
 
