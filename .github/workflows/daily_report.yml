@@ -1,0 +1,31 @@
+name: Daily Portfolio Report
+
+on:
+  schedule:
+    - cron: "30 4 * * 2-6"   # 11:30 PM hora Colombia, lunes a viernes (4:30 AM UTC del día siguiente)
+  workflow_dispatch: {}     # permite ejecutarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: pip install yfinance pandas gspread google-auth
+      - name: Enviar reporte
+        env:
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          PROFESSOR_EMAIL: ${{ secrets.PROFESSOR_EMAIL }}
+        run: python scheduler.py

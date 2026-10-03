@@ -10,10 +10,14 @@ Aplicación de Streamlit donde grupos de estudiantes compiten invirtiendo 100 mi
 
 - **Registro de grupos** con nickname, capitán y contraseña
 - **Trading diario** de 29 acciones BVC + USD/COP
-- **Precios en tiempo real** vía Yahoo Finance
+- **Precios** vía Yahoo Finance (descarga en lote, último cierre válido)
 - **Benchmark COLCAP** (ICOLCAP.CL ETF) para comparar rendimiento
-- **Leaderboard** (solo visible para el profesor)
-- **Reporte automático** por email cada noche a las 11:30 PM
+- **Leaderboard** (solo visible para el profesor) con alerta de grupos con efectivo sin invertir
+- **Gráficos**: peso por activo y por sector, evolución del portafolio vs COLCAP, return por grupo y carrera de grupos
+- **Seguridad**: contraseñas de grupos cifradas (PBKDF2), límite de intentos de inicio de sesión, textos de usuario escapados
+- **Reporte automático** por email cada noche hábil a las 11:30 PM, que además guarda una **foto del cierre** de cada grupo (pestaña `Snapshots`)
+- **Métricas de riesgo** solo para el profesor: volatilidad, Sharpe, beta, alpha, max drawdown, tracking error e information ratio
+- **Exportar a Excel** desde el panel del profesor (leaderboard, métricas, posiciones, operaciones y fotos diarias)
 - **Historial completo** de operaciones por grupo
 
 ## 🏗️ Arquitectura
@@ -24,10 +28,11 @@ pages/
   1_👨‍🏫_Profesor.py            ← Panel admin del profesor
 tickers.py                      ← Lista de activos tradeables
 data_loader.py                  ← Fetch de precios (yfinance)
-portfolio.py                    ← Cálculos de valor y métricas
-storage.py                      ← Persistencia JSON
-email_sender.py                 ← Envío de correos SMTP
-scheduler.py                    ← Script cron (GitHub Actions)
+portfolio.py                    ← Cálculos de valor, métricas e historial diario
+charts.py                       ← Gráficos Plotly (paleta apta para daltonismo)
+export.py                       ← Exportación a Excel del panel del profesor
+storage.py                      ← Persistencia en Google Sheets
+scheduler.py                    ← Reporte diario por email (GitHub Actions)
 .github/workflows/
   daily_report.yml              ← Cron 11:30 PM Colombia
 ```
@@ -57,7 +62,7 @@ git push -u origin main
 En Streamlit Cloud → **Settings → Secrets**, pega:
 
 ```toml
-admin_password = "tu_contraseña_admin"
+admin_password = "tu_contraseña_admin"   # opcional: si no se define, la clave es profesor2026
 professor_email = "henry.bojaca@gmail.com"
 
 [email]
@@ -78,11 +83,12 @@ El script `scheduler.py` corre vía **GitHub Actions** todos los días a las 11:
 Ve al repo en GitHub → **Settings → Secrets and variables → Actions → New repository secret**
 
 Añade:
-- `SMTP_SERVER` = `smtp.gmail.com`
-- `SMTP_PORT` = `587`
+- `GCP_SERVICE_ACCOUNT` = el JSON completo de la cuenta de servicio de Google (el mismo de `[gcp_service_account]` en Streamlit)
+- `SHEET_NAME` = nombre de la hoja (opcional, por defecto `Capital Markets DB`)
 - `SENDER_EMAIL` = tu email
 - `SENDER_PASSWORD` = app password de Gmail
 - `PROFESSOR_EMAIL` = `henry.bojaca@gmail.com`
+- `SMTP_SERVER` / `SMTP_PORT` = opcionales (por defecto Gmail, 587)
 
 El workflow se ejecuta automáticamente o puedes dispararlo manualmente desde **Actions → Daily Portfolio Report → Run workflow**.
 
@@ -95,9 +101,9 @@ El workflow se ejecuta automáticamente o puedes dispararlo manualmente desde **
 4. Cada día deben comprar y vender para mantenerse 100% invertidos
 
 ### Profesor
-1. Sidebar → **👨‍🏫 Profesor**
+1. Enlace **👨‍🏫 Acceso profesor** al pie de la pantalla de inicio
 2. Ingresa contraseña admin
-3. Ve leaderboard, detalle por grupo, historial, y envía reportes manuales
+3. Ve leaderboard, métricas de riesgo, detalle por grupo y operaciones; descarga todo en Excel
 
 ## 📋 Reglas del juego
 

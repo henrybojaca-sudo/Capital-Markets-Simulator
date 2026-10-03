@@ -3,21 +3,28 @@ Capital Markets Simulator - Main App
 Versión con validaciones robustas y mejor legibilidad visual
 """
 
+import html
+import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-from tickers import TRADEABLE_ASSETS, INITIAL_CAPITAL
-from data_loader import get_latest_prices
+from tickers import TRADEABLE_ASSETS, INITIAL_CAPITAL, BENCHMARK_TICKER
+from data_loader import get_latest_prices, get_price_history
 from storage import (
     register_group, authenticate, get_portfolio, save_portfolio,
     record_trade, get_trades, get_cash, decrease_cash, increase_cash,
-    _invalidate_cache,
+    _invalidate_cache, get_game_start_date,
 )
 from portfolio import (
-    calculate_invested_value, calculate_total_value, portfolio_composition,
-    calculate_return,
+    calculate_invested_value, portfolio_composition, calculate_return,
+    portfolio_history, sector_composition as portfolio_composition_by_sector,
 )
+import charts
+
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_SECONDS = 60
+MIN_PASSWORD_LEN = 6
 
 st.set_page_config(
     page_title="Capital Markets Simulator",
@@ -252,29 +259,42 @@ if not st.session_state.authenticated:
             group_num = st.number_input("Número de grupo", min_value=1, max_value=50, step=1, key="login_num")
             password = st.text_input("Contraseña", type="password", key="login_pw")
             if st.button("Iniciar Sesión →", type="primary", key="btn_login"):
-                info = authenticate(int(group_num), password)
-                if info:
-                    st.session_state.authenticated = True
-                    st.session_state.group_info = info
-                    st.rerun()
+                locked_until = st.session_state.get("login_locked_until", 0)
+                if time.time() < locked_until:
+                    st.error(f"Demasiados intentos fallidos. Espera {int(locked_until - time.time())} segundos.")
                 else:
-                    st.error("Credenciales incorrectas")
+                    info = authenticate(int(group_num), password)
+                    if info:
+                        st.session_state.login_failures = 0
+                        st.session_state.authenticated = True
+                        st.session_state.group_info = info
+                        st.rerun()
+                    else:
+                        fails = st.session_state.get("login_failures", 0) + 1
+                        st.session_state.login_failures = fails
+                        if fails >= MAX_LOGIN_ATTEMPTS:
+                            st.session_state.login_failures = 0
+                            st.session_state.login_locked_until = time.time() + LOCKOUT_SECONDS
+                        time.sleep(1)  # frena intentos automáticos
+                        st.error("Credenciales incorrectas")
 
         with tab_register:
             st.markdown('<div class="form-title">✨ Crea tu grupo</div><div class="form-sub">Empieza con 100 millones COP virtuales</div>', unsafe_allow_html=True)
             r_num = st.number_input("Número de grupo", min_value=1, max_value=50, step=1, key="reg_num")
             r_nick = st.text_input("Nickname del grupo", key="reg_nick", placeholder="Ej: Los Toros de Wall Street")
             r_captain = st.text_input("Nombre del capitán", key="reg_cap", placeholder="Ej: María López")
-            r_pw = st.text_input("Contraseña (mínimo 4 caracteres)", type="password", key="reg_pw")
+            r_pw = st.text_input(f"Contraseña (mínimo {MIN_PASSWORD_LEN} caracteres)", type="password", key="reg_pw")
             r_pw2 = st.text_input("Confirmar contraseña", type="password", key="reg_pw2")
 
             if st.button("Registrar Grupo →", type="primary", key="btn_reg"):
-                if not r_nick or not r_captain or not r_pw:
+                if not r_nick.strip() or not r_captain.strip() or not r_pw:
                     st.error("Completa todos los campos")
+                elif len(r_nick.strip()) > 40 or len(r_captain.strip()) > 40:
+                    st.error("Nickname y capitán deben tener máximo 40 caracteres")
                 elif r_pw != r_pw2:
                     st.error("Las contraseñas no coinciden")
-                elif len(r_pw) < 4:
-                    st.error("Contraseña muy corta (mínimo 4)")
+                elif len(r_pw) < MIN_PASSWORD_LEN:
+                    st.error(f"Contraseña muy corta (mínimo {MIN_PASSWORD_LEN})")
                 else:
                     ok = register_group(int(r_num), r_nick.strip(), r_captain.strip(), r_pw)
                     if ok:
@@ -301,8 +321,8 @@ try:
     with c1:
         st.markdown(f"""
         <div class="group-header">
-            <div class="group-title">📈 Grupo {group_num} — {group['nickname']}</div>
-            <div class="group-sub">Capitán: {group['captain']}</div>
+            <div class="group-title">📈 Grupo {group_num} — {html.escape(str(group['nickname']))}</div>
+            <div class="group-sub">Capitán: {html.escape(str(group['captain']))}</div>
         </div>
         """, unsafe_allow_html=True)
     with c2:
@@ -313,7 +333,8 @@ try:
             st.rerun()
 
     with st.spinner("Cargando precios del mercado..."):
-        _invalidate_cache()
+        # No se invalida la caché en cada clic: las escrituras ya la limpian,
+        # y así se evitan lecturas innecesarias a Google Sheets (límite de cuota).
         tickers_list = list(TRADEABLE_ASSETS.keys())
         prices = get_latest_prices(tickers_list)
         portfolio = get_portfolio(group_num)
@@ -403,38 +424,53 @@ try:
             """, unsafe_allow_html=True)
         else:
             comp_df = portfolio_composition(portfolio, prices)
-            
-            # VALIDAR QUE EL DATAFRAME NO ESTÉ VACÍO
+
             if comp_df.empty:
                 st.warning("⚠️ No se pudieron obtener precios para tus posiciones. Intenta recargar la página (F5).")
             else:
                 st.dataframe(
                     comp_df,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
-                    height=400,
+                    column_config={
+                        "Cantidad": st.column_config.NumberColumn(format="%.4f"),
+                        "Precio": st.column_config.NumberColumn(format="dollar"),
+                        "Valor (COP)": st.column_config.NumberColumn(format="dollar"),
+                        "Peso (%)": st.column_config.ProgressColumn(
+                            format="%.1f%%", min_value=0, max_value=100),
+                    },
                 )
-                
-                # SOLO CREAR GRÁFICO SI HAY DATOS
+
                 try:
-                    import plotly.express as px
-                    fig = px.pie(
-                        comp_df, values="Valor (COP)", names="Ticker",
-                        hole=0.6,
-                        color_discrete_sequence=["#2dd4bf", "#0ea5e9", "#a855f7", "#f59e0b",
-                                                  "#ef4444", "#10b981", "#06b6d4", "#ec4899"],
-                    )
-                    fig.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font_color="#cbd5e1",
-                        font_family="Inter",
-                        font_size=14,
-                        height=420,
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
+                    g1, g2 = st.columns(2)
+                    with g1:
+                        st.plotly_chart(
+                            charts.weights_bar(comp_df, "Ticker", "Valor (COP)", "Peso por activo"),
+                            width="stretch",
+                        )
+                    with g2:
+                        sector_df = portfolio_composition_by_sector(comp_df)
+                        st.plotly_chart(
+                            charts.weights_bar(sector_df, "Sector", "Valor (COP)", "Peso por sector"),
+                            width="stretch",
+                        )
                 except Exception as e:
-                    st.error(f"Error al crear el gráfico: {str(e)}")
+                    st.error(f"Error al crear los gráficos: {str(e)}")
+
+        # Evolución del portafolio vs COLCAP (se reconstruye con las operaciones)
+        try:
+            trades_all = get_trades(group_num)
+            if trades_all:
+                start_date = get_game_start_date() or min(t["timestamp"] for t in trades_all)[:10]
+                hist_tickers = tuple(sorted({t["ticker"] for t in trades_all} | {BENCHMARK_TICKER}))
+                closes = get_price_history(hist_tickers, start_date)
+                history = portfolio_history(trades_all, closes, start_date)
+                if len(history) >= 2:
+                    bench = charts.benchmark_return_series(closes, BENCHMARK_TICKER, history["Fecha"].iloc[0])
+                    st.plotly_chart(charts.performance_vs_benchmark(history, bench), width="stretch")
+                    st.caption("Valor aproximado al cierre de cada día, calculado con tus operaciones.")
+        except Exception as e:
+            print(f"Error en gráfico de evolución: {e}")
 
     # ========== TRADE ==========
     with tab_trade:
@@ -613,12 +649,23 @@ try:
                 st.info("📭 Sin operaciones todavía")
             else:
                 df_hist = pd.DataFrame(trades)
-                df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"])
+                df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"], errors="coerce", format="ISO8601")
                 df_hist = df_hist.sort_values("timestamp", ascending=False)
+                df_hist["action"] = df_hist["action"].map({"BUY": "🟢 Compra", "SELL": "🔴 Venta"}).fillna(df_hist["action"])
+                df_hist = df_hist.rename(columns={
+                    "timestamp": "Fecha", "action": "Operación", "ticker": "Ticker",
+                    "quantity": "Cantidad", "price": "Precio", "amount": "Monto",
+                })
                 st.dataframe(
                     df_hist,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
+                    column_config={
+                        "Fecha": st.column_config.DatetimeColumn(format="DD/MM/YYYY HH:mm"),
+                        "Cantidad": st.column_config.NumberColumn(format="%.4f"),
+                        "Precio": st.column_config.NumberColumn(format="dollar"),
+                        "Monto": st.column_config.NumberColumn(format="dollar"),
+                    },
                 )
         except Exception as e:
             st.error(f"Error al cargar historial: {str(e)}")
