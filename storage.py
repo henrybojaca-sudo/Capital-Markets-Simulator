@@ -312,54 +312,75 @@ def get_all_trades() -> dict:
     return result
 
 
-def reset_group(group_number: int):
-    tab_p = _get_tab(TAB_PORTFOLIOS)
-    all_rows = tab_p.get_all_values()
-    rows_to_delete = []
-    for i, row in enumerate(all_rows):
-        if i == 0:
+def _remove_group_rows(tab_name: str, group_keys: set):
+    """Elimina las filas de los grupos indicados con UNA sola escritura.
+
+    Lee la pestaña completa, conserva las filas de otros grupos y reescribe
+    el bloque de datos (rellenando con vacíos el espacio sobrante). Así el
+    número de llamadas a la API no depende de cuántas filas haya.
+    """
+    tab = _get_tab(tab_name)
+    all_rows = _safe_read(lambda: tab.get_all_values())
+    if len(all_rows) <= 1:
+        return
+    data = all_rows[1:]
+    keep = [r for r in data if not (r and str(r[0]).strip() in group_keys)]
+    if len(keep) == len(data):
+        return
+    ncols = max(len(r) for r in all_rows)
+    padded = [r + [""] * (ncols - len(r)) for r in keep]
+    padded += [[""] * ncols] * (len(data) - len(keep))
+    end_cell = gspread.utils.rowcol_to_a1(len(all_rows), ncols)
+    _safe_read(lambda: tab.update(
+        values=padded, range_name=f"A2:{end_cell}", value_input_option="RAW"
+    ))
+
+
+def _reset_cash(group_keys: set):
+    """Pone el cash de los grupos en el capital inicial con UNA sola escritura."""
+    tab = _get_tab(TAB_CASH)
+    col = _safe_read(lambda: tab.col_values(1))
+    updates, found = [], set()
+    for i, val in enumerate(col):
+        key = str(val).strip()
+        if i == 0 or key not in group_keys:
             continue
-        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
-            rows_to_delete.append(i + 1)
-    for row_idx in sorted(rows_to_delete, reverse=True):
-        try:
-            tab_p.delete_rows(row_idx)
-        except Exception as e:
-            print(f"Error deleting portfolio row: {e}")
-    set_cash(group_number, INITIAL_CAPITAL)
-    tab_t = _get_tab(TAB_TRADES)
-    all_trades = tab_t.get_all_values()
-    trade_rows_to_delete = []
-    for i, row in enumerate(all_trades):
-        if i == 0:
-            continue
-        if row and len(row) > 0 and str(row[0]).strip() == str(group_number):
-            trade_rows_to_delete.append(i + 1)
-    for row_idx in sorted(trade_rows_to_delete, reverse=True):
-        try:
-            tab_t.delete_rows(row_idx)
-        except Exception as e:
-            print(f"Error deleting trade row: {e}")
+        updates.append({"range": f"B{i + 1}", "values": [[INITIAL_CAPITAL]]})
+        found.add(key)
+    if updates:
+        _safe_read(lambda: tab.batch_update(updates, value_input_option="USER_ENTERED"))
+    missing = sorted(group_keys - found, key=lambda k: int(k) if k.isdigit() else 0)
+    if missing:
+        _safe_read(lambda: tab.append_rows(
+            [[int(k) if k.isdigit() else k, INITIAL_CAPITAL] for k in missing],
+            value_input_option="USER_ENTERED",
+        ))
+
+
+def _reset_groups(group_keys: set):
+    if not group_keys:
+        return
+    _remove_group_rows(TAB_PORTFOLIOS, group_keys)
+    _reset_cash(group_keys)
+    _remove_group_rows(TAB_TRADES, group_keys)
     _invalidate_cache()
+
+
+def reset_group(group_number: int):
+    _reset_groups({str(group_number)})
 
 
 def reset_all_groups():
-    groups = get_all_groups()
-    for key in groups.keys():
-        reset_group(int(key))
     _invalidate_cache()
+    groups = get_all_groups()
+    _reset_groups({str(k).strip() for k in groups.keys()})
 
 
 def delete_all_data():
+    """Borra todo excepto los encabezados (una escritura por pestaña)."""
     for tab_name in [TAB_GROUPS, TAB_PORTFOLIOS, TAB_CASH, TAB_TRADES]:
         tab = _get_tab(tab_name)
-        all_rows = tab.get_all_values()
-        if len(all_rows) > 1:
-            for row_idx in range(len(all_rows), 1, -1):
-                try:
-                    tab.delete_rows(row_idx)
-                except Exception as e:
-                    print(f"Error deleting row {row_idx} in {tab_name}: {e}")
+        _safe_read(lambda: tab.batch_clear(["A2:Z"]))
     _invalidate_cache()
 
 
