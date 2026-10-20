@@ -277,6 +277,7 @@ if not st.session_state.authenticated:
                             st.session_state.login_locked_until = time.time() + LOCKOUT_SECONDS
                         time.sleep(1)  # frena intentos automáticos
                         st.error("Credenciales incorrectas")
+            st.caption("🔑 ¿Olvidaste tu contraseña? Pídele al profesor que la restablezca desde su panel.")
 
         with tab_register:
             st.markdown('<div class="form-title">✨ Crea tu grupo</div><div class="form-sub">Empieza con 100 millones COP virtuales</div>', unsafe_allow_html=True)
