@@ -5,7 +5,7 @@ Panel del Profesor con funciones de reset y borrado total
 import hmac
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from timeutils import now_bogota, today_bogota
 
 from tickers import TRADEABLE_ASSETS, BENCHMARK_TICKER, INITIAL_CAPITAL
 from data_loader import get_latest_prices, get_benchmark_performance, get_price_history
@@ -267,7 +267,7 @@ with tab_lb:
             st.download_button(
                 "📥 Descargar todo en Excel",
                 data=excel_bytes,
-                file_name=f"capital_markets_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                file_name=f"capital_markets_{now_bogota().strftime('%Y%m%d_%H%M')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 type="primary",
             )
@@ -458,8 +458,8 @@ with tab_admin:
     with col_date:
         new_start_date = st.date_input(
             "Nueva fecha de inicio",
-            value=date.today() if not current_start else pd.to_datetime(current_start).date(),
-            max_value=date.today(),
+            value=today_bogota() if not current_start else pd.to_datetime(current_start).date(),
+            max_value=today_bogota(),
         )
     
     with col_btn_date:

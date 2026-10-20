@@ -33,6 +33,7 @@ charts.py                       ← Gráficos Plotly (paleta apta para daltonism
 export.py                       ← Exportación a Excel del panel del profesor
 storage.py                      ← Persistencia en Google Sheets
 scheduler.py                    ← Reporte diario por email (GitHub Actions)
+timeutils.py                    ← Fecha y hora en horario de Bogotá (UTC-5)
 .github/workflows/
   daily_report.yml              ← Cron 11:30 PM Colombia
 ```

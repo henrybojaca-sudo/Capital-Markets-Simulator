@@ -7,7 +7,7 @@ import html
 import time
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from timeutils import now_bogota
 
 from tickers import TRADEABLE_ASSETS, INITIAL_CAPITAL, BENCHMARK_TICKER
 from data_loader import get_latest_prices, get_price_history
@@ -672,7 +672,7 @@ try:
 
     st.markdown(f"""
     <div class="footer-text">
-        Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+        Última actualización: {now_bogota().strftime('%d/%m/%Y %H:%M')} (hora Bogotá)
     </div>
     """, unsafe_allow_html=True)
 
