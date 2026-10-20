@@ -607,7 +607,7 @@ try:
                 if sell_price and sell_price > 0:
                     st.caption(f"💰 Valor: **${current_val:,.0f}**")
 
-                    sell_pct = st.slider("% a vender", 0, 100, 100, step=10, key="sell_pct")
+                    sell_pct = st.slider("% a vender", min_value=1, max_value=100, value=1, step=1, key="sell_pct")
                     sell_qty = current_qty * sell_pct / 100
                     sell_amount = sell_qty * sell_price if sell_price else 0
                     st.caption(f"💵 Recibirás: **${sell_amount:,.0f}**")
