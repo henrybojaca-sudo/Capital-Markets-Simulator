@@ -11,6 +11,8 @@ import pandas as pd
 import streamlit as st
 import yfinance as yf
 
+from timeutils import today_bogota
+
 PRICE_TTL = 300        # precios actuales: 5 minutos
 HISTORY_TTL = 1800     # históricos para gráficos: 30 minutos
 
@@ -28,8 +30,17 @@ def _extract_closes(raw: pd.DataFrame, tickers: list) -> pd.DataFrame:
     else:
         closes = raw[["Close"]].rename(columns={"Close": tickers[0]})
     closes = closes.copy()
-    closes.index = pd.to_datetime(closes.index).tz_localize(None).normalize()
+    closes.index = _cap_to_today(pd.to_datetime(closes.index).tz_localize(None).normalize())
+    # USD/COP llega con fecha de Londres: tras las 6 PM de Bogotá ya trae una fila
+    # "de mañana". Esa fila pasa a hoy y se combina con la de hoy (último valor válido).
+    closes = closes.groupby(level=0).last()
     return closes.apply(pd.to_numeric, errors="coerce")
+
+
+def _cap_to_today(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """Ninguna fecha puede ser posterior a hoy en Bogotá."""
+    today = pd.Timestamp(today_bogota())
+    return index.where(index <= today, today)
 
 
 def _download_closes(tickers: list, **kwargs) -> pd.DataFrame:
@@ -54,7 +65,8 @@ def _single_last_close(ticker: str):
         hist = yf.Ticker(ticker).history(period="1mo")
         hist = hist["Close"].dropna()
         if not hist.empty:
-            return float(hist.iloc[-1]), hist.index[-1].strftime("%Y-%m-%d")
+            last_day = _cap_to_today(pd.DatetimeIndex([hist.index[-1].tz_localize(None).normalize()]))[0]
+            return float(hist.iloc[-1]), last_day.strftime("%Y-%m-%d")
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
     return None, None
