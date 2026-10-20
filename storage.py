@@ -236,6 +236,26 @@ def _upgrade_password(group_number: int, password: str):
         print(f"No se pudo migrar la contraseña del grupo {group_number}: {e}")
 
 
+def set_group_password(group_number: int, new_password: str) -> bool:
+    """Restablece la contraseña de un grupo (panel del profesor).
+
+    Solo cambia la contraseña: posiciones, efectivo y operaciones no se tocan.
+    """
+    try:
+        tab = _get_tab(TAB_GROUPS)
+        header = tab.row_values(1)
+        pw_col = header.index("password") + 1 if "password" in header else 4
+        col = tab.col_values(1)
+        for i, val in enumerate(col):
+            if i > 0 and str(val).strip() == str(group_number):
+                tab.update_cell(i + 1, pw_col, hash_password(new_password))
+                _read_groups_records.clear()
+                return True
+    except Exception as e:
+        print(f"No se pudo restablecer la contraseña del grupo {group_number}: {e}")
+    return False
+
+
 def get_all_groups() -> dict:
     rows = _read_groups_records()
     result = {}

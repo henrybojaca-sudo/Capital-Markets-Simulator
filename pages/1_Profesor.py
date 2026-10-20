@@ -13,7 +13,10 @@ from storage import (
     get_all_groups, get_portfolio, get_all_trades, get_cash,
     reset_group, reset_all_groups, delete_all_data,
     set_game_start_date, get_game_start_date, get_snapshots,
+    set_group_password,
 )
+MIN_GROUP_PASSWORD_LEN = 6  # igual que en el registro de grupos (app.py)
+
 from portfolio import (
     calculate_invested_value, portfolio_composition, calculate_return,
     get_leaderboard, portfolio_history, risk_metrics, value_series_from_snapshots,
@@ -398,6 +401,42 @@ with tab_admin:
                 reset_group(options[selected_label])
                 st.success(f"✅ {selected_label} reseteado correctamente")
                 st.rerun()
+
+    st.divider()
+
+    st.markdown("### 🔑 Restablecer contraseña de un grupo")
+    st.markdown("""
+    <div class="reset-warning">
+        🔑 Para grupos que olvidaron su contraseña. Solo cambia la contraseña:
+        el portafolio, el efectivo y las operaciones del grupo no se tocan.
+        Comunícale la nueva contraseña al grupo.
+    </div>
+    """, unsafe_allow_html=True)
+    if not groups:
+        st.info("Sin grupos")
+    else:
+        pw_keys = sorted(groups.keys(), key=lambda x: int(x))
+        pw_options = {
+            f"Grupo {groups[k]['group_number']} — {groups[k]['nickname']}": int(k)
+            for k in pw_keys
+        }
+        pw_label = st.selectbox(
+            "Grupo", options=list(pw_options.keys()), key="pw_group",
+        )
+        new_pw = st.text_input(
+            f"Nueva contraseña (mínimo {MIN_GROUP_PASSWORD_LEN} caracteres)",
+            type="password", key="pw_new",
+        )
+        new_pw2 = st.text_input("Confirmar nueva contraseña", type="password", key="pw_new2")
+        if st.button("🔑 Restablecer contraseña", type="primary", key="btn_set_pw"):
+            if len(new_pw) < MIN_GROUP_PASSWORD_LEN:
+                st.error(f"Contraseña muy corta (mínimo {MIN_GROUP_PASSWORD_LEN})")
+            elif new_pw != new_pw2:
+                st.error("Las contraseñas no coinciden")
+            elif set_group_password(pw_options[pw_label], new_pw):
+                st.success(f"✅ Contraseña de {pw_label} restablecida. Ya pueden entrar con la nueva.")
+            else:
+                st.error("No se pudo cambiar la contraseña. Intenta de nuevo.")
 
     st.divider()
 
