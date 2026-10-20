@@ -11,7 +11,7 @@ import time
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
+from timeutils import now_bogota, to_bogota_str
 import re
 import pandas as pd
 
@@ -103,7 +103,7 @@ def _group_public_info(r: dict) -> dict:
         "nickname": r["nickname"],
         "captain": r["captain"],
         "initial_capital": INITIAL_CAPITAL,
-        "created_at": r.get("created_at", ""),
+        "created_at": to_bogota_str(r.get("created_at", "")),
     }
 
 
@@ -198,7 +198,7 @@ def register_group(group_number: int, nickname: str, captain: str, password: str
     tab = _get_tab(TAB_GROUPS)
     tab.append_row([
         group_number, nickname, captain, hash_password(password),
-        datetime.now().isoformat(),
+        now_bogota().isoformat(timespec="seconds"),
     ], value_input_option="RAW")
     cash_tab = _get_tab(TAB_CASH)
     cash_tab.append_row([group_number, INITIAL_CAPITAL], value_input_option="USER_ENTERED")
@@ -343,7 +343,7 @@ def record_trade(group_number: int, trade: dict):
     amount = qty * price
     tab.append_row([
         group_number,
-        datetime.now().isoformat(),
+        now_bogota().isoformat(timespec="seconds"),
         trade.get("action", ""),
         trade.get("ticker", ""),
         f"{qty:.6f}",
@@ -361,7 +361,7 @@ def get_trades(group_number: int) -> list:
             qty = safe_float(r.get("quantity", 0))
             price = safe_float(r.get("price", 0))
             result.append({
-                "timestamp": r.get("timestamp", ""),
+                "timestamp": to_bogota_str(r.get("timestamp", "")),
                 "action": r.get("action", ""),
                 "ticker": r.get("ticker", ""),
                 "quantity": qty,
@@ -383,7 +383,7 @@ def get_all_trades() -> dict:
         qty = safe_float(r.get("quantity", 0))
         price = safe_float(r.get("price", 0))
         result[key].append({
-            "timestamp": r.get("timestamp", ""),
+            "timestamp": to_bogota_str(r.get("timestamp", "")),
             "action": r.get("action", ""),
             "ticker": r.get("ticker", ""),
             "quantity": qty,

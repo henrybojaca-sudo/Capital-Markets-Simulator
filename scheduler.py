@@ -26,16 +26,13 @@ import json
 import os
 import smtplib
 import sys
-from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tickers import TRADEABLE_ASSETS, BENCHMARK_TICKER, INITIAL_CAPITAL  # noqa: E402
-
-COLOMBIA = timezone(timedelta(hours=-5))
-
+from timeutils import now_bogota  # noqa: E402
 
 def _num(value, default=0.0):
     """Convierte valores de la hoja (con posibles separadores) a float."""
@@ -153,7 +150,7 @@ def build_rows(groups, portfolios, cash, prices):
 
 
 def build_html(rows, prices):
-    fecha = datetime.now(COLOMBIA).strftime("%d/%m/%Y %H:%M")
+    fecha = now_bogota().strftime("%d/%m/%Y %H:%M")
     e = lambda v: html.escape(str(v))  # noqa: E731
     bench = prices.get(BENCHMARK_TICKER)
     bench_txt = f" · ICOLCAP: ${bench:,.0f}" if bench else ""
@@ -260,7 +257,7 @@ def main():
         print("📝 Reporte guardado en reporte.html (no se escribió ni envió nada)")
         return
 
-    now = datetime.now(COLOMBIA)
+    now = now_bogota()
     if now.weekday() < 5:  # lunes a viernes
         save_snapshot(sheet, rows, now.strftime("%Y-%m-%d"))
     else:
